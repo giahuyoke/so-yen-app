@@ -6,8 +6,11 @@ import {
   HomeOutlined,
   InboxOutlined,
   LogoutOutlined,
+  PlusOutlined,
   ShopOutlined,
+  ShoppingOutlined,
   TeamOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import { Button, Drawer } from "antd";
 import Link from "next/link";
@@ -22,13 +25,13 @@ interface NavItem {
   icon: ReactNode;
 }
 
-const PRIMARY: NavItem[] = [
-  { href: "/", label: "Tổng quan", icon: <HomeOutlined /> },
-  { href: "/kho", label: "Kho", icon: <InboxOutlined /> },
-  { href: "/kho/lich-su", label: "Chứng từ", icon: <FileTextOutlined /> },
-];
+const HOME: NavItem = { href: "/", label: "Tổng quan", icon: <HomeOutlined /> };
+const SALES: NavItem = { href: "/ban-hang", label: "Đơn bán", icon: <ShoppingOutlined /> };
+const STOCK: NavItem = { href: "/kho", label: "Kho", icon: <InboxOutlined /> };
 
 const MORE: NavItem[] = [
+  { href: "/khach-hang", label: "Khách hàng", icon: <UserOutlined /> },
+  { href: "/kho/lich-su", label: "Chứng từ kho", icon: <FileTextOutlined /> },
   { href: "/nha-cung-cap", label: "Nhà cung cấp", icon: <ShopOutlined /> },
   { href: "/thanh-vien", label: "Thành viên", icon: <TeamOutlined /> },
 ];
@@ -36,7 +39,20 @@ const MORE: NavItem[] = [
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   if (href === "/kho") return pathname === "/kho";
+  if (href === "/ban-hang") return pathname === "/ban-hang";
   return pathname.startsWith(href);
+}
+
+function BottomLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  return (
+    <Link
+      href={item.href}
+      className={`flex flex-col items-center py-2 text-xs ${isActive(pathname, item.href) ? "font-medium text-brand" : "text-muted"}`}
+    >
+      <span className="text-lg">{item.icon}</span>
+      {item.label}
+    </Link>
+  );
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -47,15 +63,21 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen md:flex">
-      <aside className="hidden w-56 shrink-0 border-r border-[#e9e0ce] bg-white p-4 md:block">
-        <div className="mb-6 truncate text-lg font-semibold">{shop.name}</div>
+      <aside className="hidden w-56 shrink-0 border-r border-line bg-white p-4 md:block">
+        <div className="mb-4 flex items-center gap-2">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand text-sm font-semibold text-white">SY</span>
+          <span className="truncate text-lg font-semibold">{shop.name}</span>
+        </div>
+        <Link href="/ban-hang/moi">
+          <Button type="primary" block size="large" icon={<PlusOutlined />} className="mb-4">Bán hàng</Button>
+        </Link>
         <nav className="space-y-1">
-          {[...PRIMARY, ...MORE].map((item) => (
+          {[HOME, SALES, STOCK, ...MORE].map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 ${
-                isActive(pathname, item.href) ? "bg-amber-100 font-medium text-amber-900" : "hover:bg-amber-50"
+                isActive(pathname, item.href) ? "bg-brand-soft font-medium text-brand-dark" : "text-muted hover:bg-canvas"
               }`}
             >
               {item.icon}
@@ -68,23 +90,22 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Button>
       </aside>
 
-      <main className="min-w-0 flex-1 px-4 pb-24 pt-4 md:px-8 md:pb-8">
+      <main className="min-w-0 flex-1 px-4 pb-28 pt-4 md:px-8 md:pb-8">
         <div className="mb-3 truncate font-semibold md:hidden">{shop.name}</div>
         {children}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-4 border-t border-[#e9e0ce] bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
-        {PRIMARY.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex flex-col items-center py-2 text-xs ${isActive(pathname, item.href) ? "text-amber-800" : "text-stone-500"}`}
-          >
-            <span className="text-lg">{item.icon}</span>
-            {item.label}
-          </Link>
-        ))}
-        <button type="button" onClick={() => setMoreOpen(true)} className="flex flex-col items-center py-2 text-xs text-stone-500">
+      <nav className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 items-end border-t border-line bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+        <BottomLink item={HOME} pathname={pathname} />
+        <BottomLink item={SALES} pathname={pathname} />
+        <Link href="/ban-hang/moi" className="flex flex-col items-center pb-2 text-xs font-medium text-brand">
+          <span className="-mt-6 mb-1 grid h-14 w-14 place-items-center rounded-full bg-brand text-2xl text-white shadow-[0_8px_20px_rgba(15,110,86,0.35)]">
+            <PlusOutlined />
+          </span>
+          Bán
+        </Link>
+        <BottomLink item={STOCK} pathname={pathname} />
+        <button type="button" onClick={() => setMoreOpen(true)} className="flex flex-col items-center py-2 text-xs text-muted">
           <span className="text-lg"><AppstoreOutlined /></span>
           Thêm
         </button>
@@ -97,7 +118,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               key={item.href}
               href={item.href}
               onClick={() => setMoreOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-amber-50"
+              className="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-canvas"
             >
               {item.icon}
               {item.label}
@@ -106,7 +127,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             onClick={() => void signOut()}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left hover:bg-amber-50"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left hover:bg-canvas"
           >
             <LogoutOutlined />
             Đăng xuất
