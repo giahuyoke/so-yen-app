@@ -86,9 +86,11 @@ Mỗi tài khoản thuộc tối đa **một** cửa hàng trong MVP.
 ## 4. Mô hình dữ liệu (Firestore)
 
 Quy ước: tiền là **số nguyên VND**, số lượng là **số nguyên** theo đơn vị của
-sản phẩm (gram hoặc cái), thời gian là `Timestamp`. Mọi chứng từ có `createdBy`
-(uid), `createdAt` và `date` (ngày nghiệp vụ, mặc định là hôm nay, có thể chọn
-lùi ngày).
+sản phẩm (gram hoặc cái). Thời điểm hệ thống (`createdAt`...) là `Timestamp`.
+Mọi chứng từ có `createdBy` (uid), `createdAt` và `date`: ngày nghiệp vụ dạng
+chuỗi `YYYY-MM-DD` theo giờ Việt Nam, mặc định là hôm nay, có thể chọn lùi ngày.
+Mỗi dòng chứng từ lưu **`totalCost`** (tổng giá vốn của dòng). Đơn giá chỉ để
+hiển thị, bằng `round(totalCost / qty)`.
 
 ```text
 shops/{shopId}
@@ -105,20 +107,20 @@ shops/{shopId}
                          debtBalance, totalSpent, lastPurchaseAt   (server ghi)
   suppliers/{id}         name, phone, note
 
-  receipts/{id}          kind: harvest|purchase, supplierId?, lines[{productId, qty, unitCost}]
+  receipts/{id}          kind: harvest|purchase, supplierId?, lines[{productId, qty, totalCost}]
                          total, status: active|voided
   productions/{id}       kind: clean|steam|pack
-                         inputs[{productId, qty, unitCost}]
-                         outputs[{productId, qty, unitCost}]
+                         inputs[{productId, qty, totalCost}]
+                         outputs[{productId, qty, gramPerUnit, totalCost, unitCost}]
                          lossQty, lossRate, status
-  adjustments/{id}       lines[{productId, qtyDelta, unitCost}], reason, status
+  adjustments/{id}       lines[{productId, qtyDelta, costDelta}], reason, status
   sales/{id}             code (DH-2026-0001), customerId?, channel: zalo|facebook|shopee|store|other
                          lines[{productId, qty, price, unitCost}]
                          subtotal, discount, total, paid, debt, status
   payments/{id}          customerId, amount, method: cash|transfer, saleId?, status
   expenses/{id}          category: nest|shipping|ads|platform_fee|other, amount, note, status
 
-  movements/{id}         productId, qtyDelta, unitCost, sourceType, sourceId, date
+  movements/{id}         productId, qtyDelta, costDelta, sourceType, sourceId, date
   stats/{yyyy-mm}        revenue, cogs, expenses, saleCount
                          byChannel{channel: {revenue, cogs, count}}
                          byProduct{productId: {qty, revenue, cogs}}
@@ -128,9 +130,9 @@ shops/{shopId}
 
 ### Quy tắc tính toán
 
-- **Giá vốn bình quân gia quyền.** Khi nhập `q` đơn vị với đơn giá `c`:
-  `avgCost = round((stockQty × avgCost + q × c) / (stockQty + q))`. Thu hoạch
-  thì `c = 0`. Khi tồn về 0, `avgCost` giữ nguyên giá trị cũ.
+- **Giá vốn bình quân gia quyền.** Khi nhập `q` đơn vị với tổng giá vốn `C`:
+  `avgCost = round((stockQty × avgCost + C) / (stockQty + q))`. Thu hoạch
+  thì `C = 0`. Khi tồn về 0, `avgCost` giữ nguyên giá trị cũ.
 - **Xuất kho** (bán, đầu vào chế biến, điều chỉnh giảm) dùng `avgCost` hiện tại
   và không làm đổi `avgCost`.
 - **Chế biến.** Tổng giá vốn đầu vào là `Σ(qty × unitCost)` của mọi đầu vào
