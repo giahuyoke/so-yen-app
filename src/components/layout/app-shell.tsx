@@ -9,6 +9,7 @@ import {
   InboxOutlined,
   LogoutOutlined,
   PlusOutlined,
+  QuestionCircleOutlined,
   SettingOutlined,
   ShopOutlined,
   ShoppingOutlined,
@@ -60,6 +61,7 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: "/cai-dat", label: "Cài đặt", icon: <SettingOutlined /> },
       { href: "/thanh-vien", label: "Thành viên", icon: <TeamOutlined /> },
+      { href: "/huong-dan", label: "Hướng dẫn", icon: <QuestionCircleOutlined /> },
     ],
   },
 ];

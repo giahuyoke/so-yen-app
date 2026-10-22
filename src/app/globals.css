@@ -143,6 +143,136 @@ body {
     text-overflow: clip;
   }
 
+  /* Nội dung trang Hướng dẫn, render từ markdown. */
+  .guide {
+    line-height: 1.65;
+
+    & h2 {
+      scroll-margin-top: 5rem;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--color-brand);
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--color-brand-dark);
+    }
+    & h2:first-child {
+      margin-top: 1rem;
+    }
+    & h3 {
+      scroll-margin-top: 5rem;
+      margin: 1.75rem 0 0.5rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--color-brand);
+    }
+    & p,
+    & ul,
+    & ol {
+      margin: 0.6rem 0;
+    }
+    & ul {
+      list-style: disc;
+      padding-left: 1.4rem;
+    }
+    & ol {
+      list-style: decimal;
+      padding-left: 1.4rem;
+    }
+    & li > ul,
+    & li > ol {
+      margin: 0.25rem 0;
+      list-style: circle;
+    }
+    & li {
+      margin: 0.2rem 0;
+    }
+    & a {
+      color: var(--color-brand);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    & strong {
+      font-weight: 600;
+    }
+    & code {
+      border-radius: 0.375rem;
+      padding: 0.05rem 0.35rem;
+      background: var(--color-brand-soft);
+      font-size: 0.9em;
+    }
+    & blockquote {
+      margin: 1rem 0;
+      padding: 0.75rem 1rem;
+      border-left: 3px solid var(--color-brand);
+      border-radius: 0.75rem;
+      background: var(--color-brand-soft);
+    }
+    & blockquote p {
+      margin: 0;
+    }
+    & .guide-table {
+      margin: 0.75rem 0;
+      overflow-x: auto;
+      border: 1px solid var(--color-line);
+      border-radius: 0.75rem;
+    }
+    & table {
+      width: 100%;
+      min-width: 30rem;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    & th {
+      background: var(--color-brand);
+      color: white;
+      font-weight: 600;
+      text-align: left;
+    }
+    & th,
+    & td {
+      padding: 0.5rem 0.75rem;
+      vertical-align: top;
+    }
+    & tr + tr td {
+      border-top: 1px solid var(--color-line);
+    }
+    & .guide-figs {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin: 1rem 0 1.25rem;
+    }
+    & figure {
+      margin: 0;
+      text-align: center;
+    }
+    & figure img {
+      display: block;
+      height: auto;
+      background: white;
+    }
+    & .guide-phone {
+      width: min(15rem, 46%);
+    }
+    & .guide-phone img {
+      width: 100%;
+      border: 5px solid var(--color-ink);
+      border-radius: 1.25rem;
+    }
+    & .guide-wide img {
+      width: 100%;
+      border: 1px solid var(--color-line);
+      border-radius: 0.75rem;
+    }
+    & figcaption {
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      color: var(--color-muted);
+    }
+  }
+
   /* Thẻ antd: viền mảnh và bóng rất nhẹ để tách khỏi nền. */
   .ant-card {
     box-shadow: 0 1px 2px rgba(31, 42, 38, 0.04), 0 8px 24px -16px rgba(15, 110, 86, 0.18);
