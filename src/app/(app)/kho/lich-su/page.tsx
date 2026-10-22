@@ -9,7 +9,7 @@ import { useProducts, useRecentDocs, useSuppliers } from "@/hooks/use-shop-data"
 import type { ActionResult } from "@/lib/domain/errors";
 import { formatDate } from "@/lib/domain/dates";
 import { PRODUCTION_KIND_LABEL, RECEIPT_KIND_LABEL, type DocStatus } from "@/lib/domain/models";
-import { formatQty, formatVnd } from "@/lib/domain/money";
+import { formatPercent, formatQty, formatVnd } from "@/lib/domain/money";
 import { voidAdjustmentAction, voidProductionAction, voidReceiptAction } from "@/server/actions/inventory";
 
 type VoidFn = (shopId: string, input: unknown) => Promise<ActionResult<{ id: string }>>;
@@ -50,7 +50,7 @@ export default function DocumentsPage() {
   }));
   const productionRows: Row[] = productions.data.map((p) => ({
     id: p.id,
-    title: `${PRODUCTION_KIND_LABEL[p.kind]}${p.kind === "clean" ? ` · hao hụt ${(p.lossRate * 100).toFixed(1)}%` : ""}`,
+    title: `${PRODUCTION_KIND_LABEL[p.kind]}${p.kind === "clean" ? ` · hao hụt ${formatPercent(p.lossRate)}` : ""}`,
     date: p.date,
     status: p.status,
     lines: [

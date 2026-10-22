@@ -18,7 +18,7 @@ import {
   PRODUCTION_OUTPUT_KIND,
   type ProductionKind,
 } from "@/lib/domain/models";
-import { formatQty, formatVnd } from "@/lib/domain/money";
+import { formatPercent, formatQty, formatVnd } from "@/lib/domain/money";
 import { computeProduction } from "@/lib/domain/production";
 import { createProductionAction } from "@/server/actions/inventory";
 
@@ -123,7 +123,7 @@ export default function ProductionPage() {
               <Descriptions.Item label="Tổng giá vốn đầu vào">{formatVnd(preview.result.totalInputCost)}</Descriptions.Item>
               {kind === "clean" && (
                 <Descriptions.Item label="Hao hụt">
-                  {formatQty(preview.result.lossQty, "g")} ({(preview.result.lossRate * 100).toFixed(1)}%)
+                  {formatQty(preview.result.lossQty, "g")} ({formatPercent(preview.result.lossRate)})
                 </Descriptions.Item>
               )}
               {preview.outs.map((o, i) => (

@@ -46,7 +46,7 @@ export default function InventoryPage() {
         <Link href="/kho/dieu-chinh"><Button block>Điều chỉnh</Button></Link>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto [scrollbar-width:none]">
         <Segmented<Filter>
           value={filter}
           onChange={setFilter}

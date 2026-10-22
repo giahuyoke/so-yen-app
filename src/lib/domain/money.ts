@@ -11,6 +11,13 @@ export function formatVnd(value: number): string {
   return `${formatNumber(value)}\u00a0₫`;
 }
 
+const percentFormat = new Intl.NumberFormat("vi-VN", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/** Tỉ lệ 0..1 → "39,7%". */
+export function formatPercent(ratio: number): string {
+  return `${percentFormat.format(ratio * 100)}%`;
+}
+
 export function formatQty(qty: number, unit: Unit): string {
   return unit === "g" ? `${formatNumber(qty)}g` : `${formatNumber(qty)} cái`;
 }

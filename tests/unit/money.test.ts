@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { formatNumber, formatQty, formatVnd, parseMoney } from "@/lib/domain/money";
+import { formatNumber, formatPercent, formatQty, formatVnd, parseMoney } from "@/lib/domain/money";
 
 describe("formatVnd", () => {
   test("dùng dấu chấm phân cách hàng nghìn", () => {
@@ -38,5 +38,13 @@ describe("parseMoney", () => {
 
   test.each(["", "abc", "1,5", "1.5tr5", "-200k", "1..000"])("%s → null", (raw) => {
     expect(parseMoney(raw)).toBeNull();
+  });
+});
+
+describe("formatPercent", () => {
+  test("dấu phẩy thập phân kiểu Việt Nam, một chữ số lẻ", () => {
+    expect(formatPercent(0.5)).toBe("50,0%");
+    expect(formatPercent(0.397_2)).toBe("39,7%");
+    expect(formatPercent(0)).toBe("0,0%");
   });
 });
