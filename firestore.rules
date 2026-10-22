@@ -1,8 +1,46 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isMember(shopId) {
+      return signedIn()
+        && request.auth.uid in get(/databases/$(database)/documents/shops/$(shopId)).data.memberUids;
+    }
+
+    function optionalString(data, field, max) {
+      return !(field in data) || (data[field] is string && data[field].size() <= max);
+    }
+
+    function validSupplier(data) {
+      return data.keys().hasOnly(['name', 'phone', 'note', 'createdBy', 'createdAt', 'updatedAt'])
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 100
+        && optionalString(data, 'phone', 20)
+        && optionalString(data, 'note', 500)
+        && data.updatedAt == request.time;
+    }
+
+    match /shops/{shopId} {
+      // Mọi ghi vào cửa hàng, sản phẩm, chứng từ, movements, stats, thành viên
+      // và lời mời đều đi qua Server Actions (firebase-admin bỏ qua rules).
+      allow read: if signedIn() && request.auth.uid in resource.data.memberUids;
+
+      match /{collection}/{docId} {
+        allow read: if isMember(shopId);
+      }
+
+      match /suppliers/{supplierId} {
+        allow create: if isMember(shopId)
+          && validSupplier(request.resource.data)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.createdAt == request.time;
+        allow update: if isMember(shopId)
+          && validSupplier(request.resource.data)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.createdAt == resource.data.createdAt;
+      }
     }
   }
 }
