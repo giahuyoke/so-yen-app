@@ -1,7 +1,8 @@
 "use client";
 
-import { Button, Card, Empty, Input, List, Modal, Tabs, Tag } from "antd";
+import { Button, Card, Empty, List, Tabs, Tag } from "antd";
 import { useState } from "react";
+import { VoidModal } from "@/components/common/void-modal";
 import { useRunAction } from "@/components/common/use-run-action";
 import { useShop } from "@/components/shop/shop-provider";
 import { useProducts, useRecentDocs, useSuppliers } from "@/hooks/use-shop-data";
@@ -32,8 +33,6 @@ export default function DocumentsPage() {
   const productions = useRecentDocs("productions");
   const adjustments = useRecentDocs("adjustments");
   const [voiding, setVoiding] = useState<{ id: string; fn: VoidFn } | null>(null);
-  const [reason, setReason] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
   const describe = (productId: string, qty: number) => {
     const p = products.byId.get(productId);
@@ -81,7 +80,7 @@ export default function DocumentsPage() {
             <List.Item
               actions={
                 row.status === "active"
-                  ? [<Button key="void" danger size="small" onClick={() => { setReason(""); setVoiding({ id: row.id, fn }); }}>Hủy</Button>]
+                  ? [<Button key="void" danger size="small" onClick={() => setVoiding({ id: row.id, fn })}>Hủy</Button>]
                   : [<Tag key="voided">Đã hủy</Tag>]
               }
             >
@@ -112,24 +111,18 @@ export default function DocumentsPage() {
           { key: "adjustments", label: "Điều chỉnh", children: renderList(adjustmentRows, adjustments.loading, voidAdjustmentAction) },
         ]}
       />
-      <Modal
+      <VoidModal
+        key={voiding?.id ?? "none"}
         open={!!voiding}
-        title="Hủy chứng từ"
-        okText="Hủy chứng từ"
-        okButtonProps={{ danger: true, disabled: !reason.trim(), loading: submitting }}
-        cancelText="Đóng"
+        description="Kho sẽ được trả lại như trước khi có chứng từ này. Chứng từ vẫn được giữ trong lịch sử."
         onCancel={() => setVoiding(null)}
-        onOk={async () => {
-          if (!voiding) return;
-          setSubmitting(true);
+        onConfirm={async (reason) => {
+          if (!voiding) return false;
           const ok = await run(voiding.fn(shop.id, { id: voiding.id, reason }), { success: "Đã hủy chứng từ" });
-          setSubmitting(false);
           if (ok) setVoiding(null);
+          return !!ok;
         }}
-      >
-        <p className="mb-2">Kho sẽ được trả lại như trước khi có chứng từ này. Chứng từ vẫn được giữ trong lịch sử.</p>
-        <Input.TextArea rows={3} placeholder="Lý do hủy" value={reason} onChange={(e) => setReason(e.target.value)} />
-      </Modal>
+      />
     </div>
   );
 }

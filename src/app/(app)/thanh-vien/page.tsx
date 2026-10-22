@@ -52,17 +52,19 @@ export default function MembersPage() {
               actions={
                 m.id === user?.uid
                   ? [<Tag key="me">Bạn</Tag>]
-                  : [
-                      <Popconfirm
-                        key="remove"
-                        title={`Gỡ ${m.displayName} khỏi cửa hàng?`}
-                        okText="Gỡ"
-                        cancelText="Không"
-                        onConfirm={() => run(removeMemberAction(shop.id, { uid: m.id }), { success: "Đã gỡ thành viên" })}
-                      >
-                        <Button danger size="small">Gỡ</Button>
-                      </Popconfirm>,
-                    ]
+                  : m.id === shop.ownerUid
+                    ? [<Tag key="owner" color="gold">Chủ</Tag>]
+                    : [
+                        <Popconfirm
+                          key="remove"
+                          title={`Gỡ ${m.displayName} khỏi cửa hàng?`}
+                          okText="Gỡ"
+                          cancelText="Không"
+                          onConfirm={() => run(removeMemberAction(shop.id, { uid: m.id }), { success: "Đã gỡ thành viên" })}
+                        >
+                          <Button danger size="small">Gỡ</Button>
+                        </Popconfirm>,
+                      ]
               }
             >
               <List.Item.Meta title={m.displayName} description={m.email} />
