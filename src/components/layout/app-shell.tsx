@@ -17,6 +17,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
+import { Logo } from "@/components/common/logo";
 import { useShop } from "@/components/shop/shop-provider";
 
 interface NavItem {
@@ -65,7 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen md:flex">
       <aside className="hidden w-56 shrink-0 border-r border-line bg-white p-4 md:block">
         <div className="mb-4 flex items-center gap-2">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand text-sm font-semibold text-white">SY</span>
+          <Logo className="h-9 w-9 shrink-0" />
           <span className="truncate text-lg font-semibold">{shop.name}</span>
         </div>
         <Link href="/ban-hang/moi">

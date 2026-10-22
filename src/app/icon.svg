@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#18906f"/>
+      <stop offset="1" stop-color="#074a3c"/>
+    </linearGradient>
+    <linearGradient id="nest" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbf0d8"/>
+      <stop offset="1" stop-color="#e2c48c"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
+  <!-- tổ yến: chén nhìn nghiêng từ trên -->
+  <path fill="url(#nest)" d="M10 37C10 49 20 56 31 56S52 49 52 37Z"/>
+  <ellipse cx="31" cy="37" rx="21" ry="5" fill="#f7e6c1"/>
+  <ellipse cx="31" cy="37.6" rx="16.5" ry="3.2" fill="#c99c55"/>
+  <path fill="none" stroke="#c99c55" stroke-opacity=".55" stroke-width="1.1" stroke-linecap="round" d="M14 44.5C22 47 33 46 47 43M17 50C25 51.5 36 51 44 48.5"/>
+  <!-- chim yến sải cánh, bay chéo lên -->
+  <g transform="translate(37 18) rotate(-16) scale(.78) translate(-32 -26)">
+    <path fill="#fff" d="M7 25.5C15 17 25 16.5 32 22.5 39 16.5 49 17 57 25.5 48.5 21.5 40 22.5 35 27.5L34.2 31 36.6 35.5 32 33.2 27.4 35.5 29.8 31 29 27.5C24 22.5 15.5 21.5 7 25.5Z"/>
+  </g>
+</svg>
