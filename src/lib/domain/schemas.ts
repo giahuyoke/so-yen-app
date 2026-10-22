@@ -9,6 +9,7 @@ import {
   TAX_GROUPS,
   UNITS,
 } from "@/lib/domain/models";
+import { BANK_BINS } from "@/lib/domain/vietqr";
 
 const id = z.string().regex(/^[A-Za-z0-9_-]{10,40}$/, "Mã không hợp lệ");
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày không hợp lệ");
@@ -160,3 +161,17 @@ export const taxConfigInput = z
     message: "Mốc thứ hai phải lớn hơn mốc miễn thuế",
     path: ["invoiceThreshold"],
   });
+
+export const bankAccountInput = z.object({
+  bankBin: z.enum(BANK_BINS, "Chọn ngân hàng"),
+  accountNo: z
+    .string()
+    .trim()
+    .regex(/^[0-9A-Za-z]{4,19}$/, "Số tài khoản chỉ gồm chữ số hoặc chữ, từ 4 đến 19 ký tự"),
+  accountName: z
+    .string()
+    .trim()
+    .min(1, "Nhập tên chủ tài khoản")
+    .max(50, "Tên tối đa 50 ký tự")
+    .transform((v) => v.toUpperCase()),
+});

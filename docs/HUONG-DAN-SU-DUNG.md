@@ -128,6 +128,7 @@ Mọi nghiệp vụ (phiếu nhập, phiếu chế biến, phiếu điều chỉ
 Làm lần lượt các bước sau trước khi ghi sổ hằng ngày:
 
 1. **Cài đặt → Cấu hình thuế:** kiểm tra mốc doanh thu và tỷ lệ thuế ([mục 11.3](#113-cấu-hình-thuế)).
+   Ở cùng trang, điền **Tài khoản nhận chuyển khoản** (ngân hàng, số tài khoản, tên chủ tài khoản) để hóa đơn có mã QR ([mục 6.2](#62-gửi-tóm-tắt-cho-khách)).
 2. **Kho → + Sản phẩm:** tạo đủ các sản phẩm, cả vật tư ([mục 5.2](#52-tạo-và-sửa-sản-phẩm)).
 3. **Nhà cung cấp → Thêm:** nếu bạn có mua hàng từ bên ngoài.
 4. **Khách hàng → Thêm:** khách quen, đại lý (có thể thêm dần khi bán).
@@ -254,11 +255,17 @@ Mỗi đơn có mã dạng **DH-2026-0001**, đánh số lại từ 1 mỗi năm
 
 ### 6.2. Gửi tóm tắt cho khách
 
-Sau khi lưu, màn hình hiện đoạn tóm tắt đơn (tên cửa hàng, mã đơn, ngày, khách, từng dòng hàng, tổng, đã trả, còn nợ):
+Sau khi lưu, màn hình hiện đoạn tóm tắt đơn (tên cửa hàng, mã đơn, ngày, khách, từng dòng hàng, tổng, đã thanh toán, còn lại cần thanh toán). Những gì gửi khách đều không dùng chữ "nợ" cho nhẹ nhàng:
 
 - **Gửi cho khách:** mở bảng chia sẻ của điện thoại để gửi thẳng qua Zalo, Messenger…
 - **Sao chép tóm tắt:** chép vào bộ nhớ tạm để dán vào Zalo. Nếu đang mở web trong trình duyệt của Zalo/Facebook mà không chép được, Sổ Yến sẽ bôi đen sẵn đoạn tóm tắt — bạn **nhấn giữ** để sao chép.
+- **Xuất hóa đơn:** tạo ảnh hóa đơn kèm **mã QR VietQR** để khách quét bằng app ngân hàng. Mã QR điền sẵn số tiền và nội dung là mã đơn (bỏ dấu gạch, ví dụ `DH20260001`), nên khách không phải gõ tay và bạn dễ đối soát.
+  - Số tiền trên mã QR mặc định là **số còn nợ** của đơn; đơn đã trả đủ thì mặc định là **tổng đơn** (cho trường hợp khách sẽ chuyển khoản sau). Bạn sửa được số này; để **0** thì ảnh không in mã QR.
+  - Bấm **Gửi ảnh** để gửi thẳng qua Zalo, hoặc **Tải ảnh** để lưu về máy. Trong trình duyệt của Zalo/Facebook, **nhấn giữ** ảnh để lưu hoặc chia sẻ.
+  - Chưa có tài khoản ngân hàng thì ảnh vẫn xuất được nhưng không có mã QR. Vào **Cài đặt → Tài khoản nhận chuyển khoản** để thêm.
 - **Tạo đơn mới** hoặc **Xem đơn**.
+
+Trang **chi tiết đơn** cũng có khối **Gửi khách** và nút **Xuất hóa đơn**. Với đơn đã thu nợ một phần, cả đoạn tóm tắt lẫn hóa đơn đều ghi thêm dòng **Thanh toán thêm** và **Còn lại cần thanh toán** là phần còn lại; số tiền trên mã QR mặc định cũng là phần còn lại này.
 
 ### 6.3. Danh sách đơn bán
 
@@ -408,7 +415,7 @@ Chọn **năm** ở góc trên. Thanh tiến độ cho biết:
 
 ### 11.3. Cấu hình thuế
 
-**Cài đặt** (hoặc nút **Cấu hình** trên trang Thuế):
+**Cài đặt** (hoặc nút **Cấu hình** trên trang Thuế), dưới thẻ *Tài khoản nhận chuyển khoản*:
 
 - **Mốc miễn thuế (doanh thu năm)** — mặc định 500.000.000 ₫.
 - **Mốc bắt buộc hóa đơn điện tử** — mặc định 1.000.000.000 ₫.

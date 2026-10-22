@@ -57,9 +57,15 @@ export interface SaleSummary {
   total: number;
   paid: number;
   debt: number;
+  /** Nợ còn lại sau các lần thu nợ; bỏ trống thì coi như bằng nợ lúc bán. */
+  remainingDebt?: number;
 }
 
-/** Văn bản để dán gửi khách qua Zalo/Messenger. */
+export function remainingOf(s: SaleSummary): number {
+  return s.remainingDebt ?? s.debt;
+}
+
+/** Văn bản để dán gửi khách qua Zalo/Messenger; tránh chữ "nợ" vì khách đọc. */
 export function saleSummaryText(s: SaleSummary): string {
   const rows = [
     s.shopName,
@@ -71,8 +77,10 @@ export function saleSummaryText(s: SaleSummary): string {
     `Tạm tính: ${formatVnd(s.subtotal)}`,
   ];
   if (s.discount > 0) rows.push(`Giảm giá: ${formatVnd(s.discount)}`);
-  rows.push(`Tổng cộng: ${formatVnd(s.total)}`, `Đã trả: ${formatVnd(s.paid)}`);
-  if (s.debt > 0) rows.push(`Còn nợ: ${formatVnd(s.debt)}`);
+  rows.push(`Tổng cộng: ${formatVnd(s.total)}`, `Đã thanh toán: ${formatVnd(s.paid)}`);
+  const remaining = remainingOf(s);
+  if (s.debt > remaining) rows.push(`Thanh toán thêm: ${formatVnd(s.debt - remaining)}`);
+  if (remaining > 0) rows.push(`Còn lại cần thanh toán: ${formatVnd(remaining)}`);
   rows.push("Cảm ơn quý khách!");
   return rows.join("\n");
 }

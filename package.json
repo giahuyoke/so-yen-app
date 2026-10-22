@@ -24,6 +24,7 @@
     "firebase-admin": "^14.5.0",
     "marked": "^14.1.4",
     "next": "16.4.0",
+    "qrcode": "^1.5.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "^4.1.0"
@@ -32,6 +33,7 @@
     "@firebase/rules-unit-testing": "^5.0.2",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

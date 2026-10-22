@@ -10,6 +10,7 @@ import { useRunAction } from "@/components/common/use-run-action";
 import { VoidModal } from "@/components/common/void-modal";
 import { PaymentModal, type PaymentRequest } from "@/components/customers/payment-modal";
 import { MetricRow } from "@/components/reports/period-picker";
+import { InvoiceButton } from "@/components/sales/invoice-button";
 import { useShareSummary } from "@/components/sales/use-share-summary";
 import { useShop } from "@/components/shop/shop-provider";
 import { useCustomers, useCustomerSales, useProducts, useSale, useSalePayments } from "@/hooks/use-shop-data";
@@ -17,7 +18,7 @@ import { formatDate } from "@/lib/domain/dates";
 import { remainingDebtBySale } from "@/lib/domain/debt";
 import { PAYMENT_METHOD_LABEL, SALE_CHANNEL_LABEL } from "@/lib/domain/models";
 import { formatQty, formatUnitPrice, formatVnd } from "@/lib/domain/money";
-import { saleSummaryText } from "@/lib/domain/sale";
+import { saleSummaryText, type SaleSummary } from "@/lib/domain/sale";
 import { voidSaleAction } from "@/server/actions/sales";
 
 /** Khóa truy vấn không khớp đơn nào, dùng cho đơn khách lẻ (hook không được gọi có điều kiện). */
@@ -38,8 +39,9 @@ export default function SaleDetailPage() {
 
   const s = sale.data;
   const customer = s?.customerId ? customers.byId.get(s.customerId) : undefined;
-  const summary = s
-    ? saleSummaryText({
+  const remaining = s && customer ? (remainingDebtBySale(customerSales.data, customer.debtBalance ?? 0).get(s.id) ?? 0) : 0;
+  const saleSummary: SaleSummary | null = s
+    ? {
         shopName: shop.name,
         customerName: customer?.name,
         code: s.code,
@@ -53,8 +55,11 @@ export default function SaleDetailPage() {
         total: s.total,
         paid: s.paid,
         debt: s.debt,
-      })
-    : "";
+        // Chỉ in phần còn lại khi đã tải xong đơn của khách, tránh hiện "đã thanh toán hết" thoáng qua.
+        remainingDebt: customer && !customerSales.loading ? remaining : undefined,
+      }
+    : null;
+  const summary = saleSummary ? saleSummaryText(saleSummary) : "";
   const { canShare, copy, share, summaryRef } = useShareSummary(s?.code ?? "", summary);
 
   if (sale.loading) return <Card loading />;
@@ -62,7 +67,6 @@ export default function SaleDetailPage() {
     return <Result status="404" title="Không tìm thấy đơn bán" extra={<Link href="/ban-hang"><Button>Về danh sách</Button></Link>} />;
   }
 
-  const remaining = customer ? (remainingDebtBySale(customerSales.data, customer.debtBalance ?? 0).get(s.id) ?? 0) : 0;
   const cogs = s.lines.reduce((sum, l) => sum + l.totalCost, 0);
   const voided = s.status === "voided";
 
@@ -150,6 +154,7 @@ export default function SaleDetailPage() {
           <div className="mt-3 flex flex-wrap gap-2">
             {canShare && <Button type="primary" icon={<SendOutlined />} onClick={() => void share()}>Gửi cho khách</Button>}
             <Button type={canShare ? "default" : "primary"} icon={<CopyOutlined />} onClick={() => void copy()}>Sao chép tóm tắt</Button>
+            {saleSummary && <InvoiceButton sale={saleSummary} defaultAmount={s.debt > 0 ? remaining : s.total} />}
           </div>
         </Card>
       )}

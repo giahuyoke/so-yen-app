@@ -1,6 +1,6 @@
 import { FieldValue, type Firestore } from "firebase-admin/firestore";
 import { AppError } from "@/lib/domain/errors";
-import { inviteInput, removeMemberInput, shopNameInput, taxConfigInput } from "@/lib/domain/schemas";
+import { bankAccountInput, inviteInput, removeMemberInput, shopNameInput, taxConfigInput } from "@/lib/domain/schemas";
 import type { Actor } from "@/server/actor";
 
 export interface MyShop {
@@ -117,4 +117,10 @@ export async function updateTaxConfig(db: Firestore, shopId: string, input: unkn
   const taxConfig = taxConfigInput.parse(input);
   await shopRef(db, shopId).update({ taxConfig });
   return taxConfig;
+}
+
+export async function updateBankAccount(db: Firestore, shopId: string, input: unknown) {
+  const bankAccount = bankAccountInput.parse(input);
+  await shopRef(db, shopId).update({ bankAccount });
+  return bankAccount;
 }

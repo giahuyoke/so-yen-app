@@ -8,6 +8,7 @@ import { getClientDb } from "@/lib/firebase/client";
 import { remainingDebtBySale } from "@/lib/domain/debt";
 import { todayVN } from "@/lib/domain/dates";
 import { resolveTaxConfig, type TaxConfig } from "@/lib/domain/tax";
+import type { BankAccount } from "@/lib/domain/vietqr";
 import type {
   AdjustmentDoc,
   Customer,
@@ -108,6 +109,12 @@ export function useTaxConfig(): { data: TaxConfig; loading: boolean } {
   const shop = useLiveDoc<{ id: string; taxConfig?: Partial<TaxConfig> }>("shop", (db, shopId) => doc(db, "shops", shopId));
   const data = useMemo(() => resolveTaxConfig(shop.data?.taxConfig), [shop.data?.taxConfig]);
   return { data, loading: shop.loading };
+}
+
+/** Tài khoản nhận chuyển khoản in trên hóa đơn; null khi chưa cài. */
+export function useBankAccount(): { data: BankAccount | null; loading: boolean } {
+  const shop = useLiveDoc<{ id: string; bankAccount?: BankAccount }>("shop", (db, shopId) => doc(db, "shops", shopId));
+  return { data: shop.data?.bankAccount ?? null, loading: shop.loading };
 }
 
 /** Chế biến trong khoảng ngày (YYYY-MM-DD). */

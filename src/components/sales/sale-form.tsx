@@ -16,7 +16,7 @@ import { todayVN } from "@/lib/domain/dates";
 import { newId } from "@/lib/domain/ids";
 import { SALE_CHANNEL_LABEL, SALE_CHANNELS, SELLABLE_KINDS, type SaleChannel } from "@/lib/domain/models";
 import { formatQty, formatVnd, fromDisplayPrice, GRAMS_PER_PRICE_UNIT, priceUnitLabel, toDisplayPrice } from "@/lib/domain/money";
-import { computeSale, saleSummaryText } from "@/lib/domain/sale";
+import { computeSale, type SaleSummary } from "@/lib/domain/sale";
 import { createSaleAction } from "@/server/actions/sales";
 
 interface Line {
@@ -45,7 +45,7 @@ export function SaleForm({ onNew }: { onNew: () => void }) {
   const [id] = useState(newId);
   const [saving, setSaving] = useState(false);
   const [customerDrawer, setCustomerDrawer] = useState(false);
-  const [done, setDone] = useState<{ code: string; summary: string } | null>(null);
+  const [done, setDone] = useState<SaleSummary | null>(null);
   // "Khách trả" tự bằng tổng đơn cho tới khi người dùng tự sửa số tiền.
   const [paidTouched, setPaidTouched] = useState(false);
 
@@ -65,7 +65,7 @@ export function SaleForm({ onNew }: { onNew: () => void }) {
     paid ?? 0,
   );
 
-  if (done) return <SaleDone id={id} code={done.code} summary={done.summary} onNew={onNew} />;
+  if (done) return <SaleDone id={id} sale={done} onNew={onNew} />;
 
   return (
     <>
@@ -103,22 +103,19 @@ export function SaleForm({ onNew }: { onNew: () => void }) {
           if (!result) return;
           const t = computeSale(payload.lines.map((l) => ({ qty: l.qty ?? 0, price: l.price })), payload.discount, payload.paid);
           setDone({
+            shopName: shop.name,
+            customerName: payload.customerId ? customers.byId.get(payload.customerId)?.name : null,
             code: result.code,
-            summary: saleSummaryText({
-              shopName: shop.name,
-              customerName: payload.customerId ? customers.byId.get(payload.customerId)?.name : null,
-              code: result.code,
-              date: payload.date,
-              lines: payload.lines.map((l) => {
-                const p = products.byId.get(l.productId!)!;
-                return { name: p.name, unit: p.unit, qty: l.qty!, price: l.price };
-              }),
-              subtotal: t.subtotal,
-              discount: payload.discount,
-              total: t.total,
-              paid: payload.paid,
-              debt: t.debt,
+            date: payload.date,
+            lines: payload.lines.map((l) => {
+              const p = products.byId.get(l.productId!)!;
+              return { name: p.name, unit: p.unit, qty: l.qty!, price: l.price };
             }),
+            subtotal: t.subtotal,
+            discount: payload.discount,
+            total: t.total,
+            paid: payload.paid,
+            debt: t.debt,
           });
         }}
       >

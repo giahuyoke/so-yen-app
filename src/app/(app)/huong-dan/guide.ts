@@ -15,6 +15,8 @@ const SIZES: Record<string, [number, number]> = {
   "m-more": [554, 1200],
   "m-ncc": [554, 1200],
   "m-caidat": [468, 1200],
+  "m-caidat-bank": [554, 1200],
+  "hoa-don": [720, 1224],
   "m-kho": [554, 1200],
   "m-product": [554, 1200],
   "m-nhap": [468, 1200],
@@ -38,7 +40,7 @@ const SIZES: Record<string, [number, number]> = {
   "m-thanhvien": [554, 1200],
 };
 
-function figure(name: string, caption: string, kind: "phone" | "wide") {
+function figure(name: string, caption: string, kind: "phone" | "wide" | "image") {
   const [w, h] = SIZES[name];
   const src = `/huong-dan/${name}.jpg`;
   return (
@@ -48,6 +50,8 @@ function figure(name: string, caption: string, kind: "phone" | "wide") {
   );
 }
 const phone = (name: string, caption: string) => figure(name, caption, "phone");
+/** Ảnh do app tạo ra (không phải ảnh chụp màn hình), không có khung điện thoại. */
+const image = (name: string, caption: string) => figure(name, caption, "image");
 const wide = (name: string, caption: string) => `<div class="guide-figs">${figure(name, caption, "wide")}</div>`;
 const row = (...figs: string[]) => `<div class="guide-figs">${figs.join("")}</div>`;
 
@@ -56,13 +60,14 @@ const FIGURES: Record<string, string> = {
   "### 1.1. Đăng nhập": wide("login", "Màn hình đăng nhập"),
   "### 2.1. Trên máy tính": wide("d-overview", "Giao diện trên máy tính: thanh bên trái và trang Tổng quan"),
   "### 2.2. Trên điện thoại": row(phone("m-overview", "Thanh dưới cùng trên điện thoại"), phone("m-more", "Ngăn “Thêm” chứa các mục còn lại")),
-  "## 4. Thiết lập ban đầu": row(phone("m-ncc", "Danh sách nhà cung cấp"), phone("m-caidat", "Cài đặt → Cấu hình thuế")),
+  "## 4. Thiết lập ban đầu": row(phone("m-ncc", "Danh sách nhà cung cấp"), phone("m-caidat-bank", "Cài đặt → Tài khoản nhận chuyển khoản")),
   "### 5.1. Xem và tìm sản phẩm": row(phone("m-kho", "Trang Kho: tồn kho và giá vốn từng sản phẩm"), phone("m-product", "Bấm vào sản phẩm để sửa")),
   "### 5.3. Nhập kho": row(phone("m-nhap", "Phiếu “Mua hàng”: dưới thành tiền hiện giá quy đổi ₫/100g")),
   "### 5.4. Chế biến": row(phone("m-chebien", "Phiếu làm sạch: chọn nguyên liệu đầu vào"), phone("m-chebien-2", "Thành phẩm đầu ra và khối Xem trước")),
   "### 5.5. Điều chỉnh kho": row(phone("m-dieuchinh", "Phiếu điều chỉnh: số âm là giảm kho")),
   "### 5.6. Chứng từ kho (lịch sử)": row(phone("m-lichsu", "Chứng từ kho theo tab, nút ⋯ để hủy")),
   "### 6.1. Tạo đơn bán": row(phone("m-banmoi", "Chọn khách, kênh bán và sản phẩm"), phone("m-banmoi-2", "Khách trả thiếu: phần còn lại thành công nợ")),
+  "### 6.2. Gửi tóm tắt cho khách": row(image("hoa-don", "Ảnh hóa đơn gửi khách: mã QR điền sẵn số tiền và mã đơn")),
   "### 6.3. Danh sách đơn bán": row(phone("m-donban", "Danh sách đơn bán với tìm kiếm và bộ lọc")),
   "### 6.4. Chi tiết đơn": row(phone("m-chitietdon", "Đơn còn nợ: nút “Thu nợ đơn này”, giá vốn, lãi gộp"), phone("m-chitietdon-2", "Phiếu thu của đơn và khối “Gửi khách”")),
   "### 7.1. Danh sách khách hàng": row(phone("m-khach", "Nhãn đỏ là số tiền khách đang nợ")),
@@ -72,6 +77,7 @@ const FIGURES: Record<string, string> = {
   "### 10.1. Chọn kỳ báo cáo": wide("d-report", "Trang Báo cáo trên máy tính: chọn kỳ, nút Xuất Excel"),
   "### 10.2. Các mục báo cáo": row(phone("m-baocao-kenh", "Báo cáo theo kênh bán"), phone("m-baocao-haohut", "Hao hụt theo nguồn hàng")),
   "### 11.1. Đồng hồ thuế": row(phone("m-thue", "Đồng hồ thuế và thuế ước tính")),
+  "### 11.3. Cấu hình thuế": row(phone("m-caidat", "Cài đặt → Cấu hình thuế")),
   "## 12. Thành viên": row(phone("m-thanhvien", "Mời người nhà bằng email Google")),
 };
 

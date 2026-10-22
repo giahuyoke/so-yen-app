@@ -6,6 +6,7 @@ import {
   findMyShop,
   inviteMember,
   removeMember,
+  updateBankAccount,
   updateTaxConfig,
 } from "@/server/services/membership";
 import { DEFAULT_TAX_CONFIG } from "@/lib/domain/tax";
@@ -104,3 +105,21 @@ describe("updateTaxConfig", () => {
 async function createMemberDoc(uid: string, email: string) {
   await db().collection("shops").doc(SHOP_ID).collection("members").doc(uid).set({ email, displayName: email });
 }
+
+describe("updateBankAccount", () => {
+  test("lưu tài khoản, tên chủ tài khoản in hoa", async () => {
+    await seedShop();
+    await updateBankAccount(db(), SHOP_ID, { bankBin: "970436", accountNo: " 0123456789 ", accountName: "Nguyen Van A" });
+    expect((await db().collection("shops").doc(SHOP_ID).get()).get("bankAccount")).toEqual({
+      bankBin: "970436",
+      accountNo: "0123456789",
+      accountName: "NGUYEN VAN A",
+    });
+  });
+
+  test("từ chối ngân hàng lạ hoặc số tài khoản sai", async () => {
+    await seedShop();
+    await expect(updateBankAccount(db(), SHOP_ID, { bankBin: "123", accountNo: "0123456789", accountName: "A" })).rejects.toThrow();
+    await expect(updateBankAccount(db(), SHOP_ID, { bankBin: "970436", accountNo: "01 23", accountName: "A" })).rejects.toThrow();
+  });
+});

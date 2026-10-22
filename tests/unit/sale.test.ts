@@ -72,7 +72,7 @@ describe("saleSummaryText", () => {
     expect(text).toContain("- Yến chưng 70ml: 2 cái × 300.000\u00a0₫/cái = 600.000\u00a0₫");
     expect(text).toContain("Giảm giá: 100.000\u00a0₫");
     expect(text).toContain("Tổng cộng: 5.000.000\u00a0₫");
-    expect(text).toContain("Còn nợ: 2.000.000\u00a0₫");
+    expect(text).toContain("Còn lại cần thanh toán: 2.000.000\u00a0₫");
   });
 
   test("bỏ dòng giảm giá và còn nợ khi bằng 0", () => {
@@ -83,6 +83,20 @@ describe("saleSummaryText", () => {
     });
     expect(text).not.toContain("Khách hàng");
     expect(text).not.toContain("Giảm giá");
-    expect(text).not.toContain("Còn nợ");
+    expect(text).not.toContain("Còn lại cần thanh toán");
+  });
+
+  test("trừ các lần thu nợ sau khi bán", () => {
+    const base = {
+      shopName: "A", code: "DH-2026-0003", date: "2026-10-22",
+      lines: [{ name: "X", unit: "piece" as const, qty: 1, price: 5_000_000 }],
+      subtotal: 5_000_000, discount: 0, total: 5_000_000, paid: 3_000_000, debt: 2_000_000,
+    };
+    const partly = saleSummaryText({ ...base, remainingDebt: 500_000 });
+    expect(partly).toContain("Thanh toán thêm: 1.500.000\u00a0₫");
+    expect(partly).toContain("Còn lại cần thanh toán: 500.000\u00a0₫");
+    const settled = saleSummaryText({ ...base, remainingDebt: 0 });
+    expect(settled).toContain("Thanh toán thêm: 2.000.000\u00a0₫");
+    expect(settled).not.toContain("Còn lại cần thanh toán");
   });
 });

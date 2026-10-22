@@ -252,8 +252,14 @@ body {
       height: auto;
       background: white;
     }
-    & .guide-phone {
+    & .guide-phone,
+    & .guide-image {
       width: min(15rem, 46%);
+    }
+    & .guide-image img {
+      width: 100%;
+      border: 1px solid var(--color-line);
+      border-radius: 0.75rem;
     }
     & .guide-phone img {
       width: 100%;
