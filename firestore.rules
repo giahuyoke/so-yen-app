@@ -22,6 +22,14 @@ service cloud.firestore {
         && data.updatedAt == request.time;
     }
 
+    function validCustomerFields(data) {
+      return data.name is string && data.name.size() >= 1 && data.name.size() <= 100
+        && optionalString(data, 'phone', 20)
+        && optionalString(data, 'note', 500)
+        && data.type in ['retail', 'agent']
+        && data.updatedAt == request.time;
+    }
+
     match /shops/{shopId} {
       // Mọi ghi vào cửa hàng, sản phẩm, chứng từ, movements, stats, thành viên
       // và lời mời đều đi qua Server Actions (firebase-admin bỏ qua rules).
@@ -40,6 +48,18 @@ service cloud.firestore {
           && validSupplier(request.resource.data)
           && request.resource.data.createdBy == resource.data.createdBy
           && request.resource.data.createdAt == resource.data.createdAt;
+      }
+
+      // debtBalance, totalSpent, lastPurchaseAt chỉ server ghi (qua đơn bán và thu nợ).
+      match /customers/{customerId} {
+        allow create: if isMember(shopId)
+          && request.resource.data.keys().hasOnly(['name', 'phone', 'type', 'note', 'createdBy', 'createdAt', 'updatedAt'])
+          && validCustomerFields(request.resource.data)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.createdAt == request.time;
+        allow update: if isMember(shopId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone', 'type', 'note', 'updatedAt'])
+          && validCustomerFields(request.resource.data);
       }
     }
   }

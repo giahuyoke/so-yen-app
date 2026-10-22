@@ -106,3 +106,45 @@ describe("ghi", () => {
     );
   });
 });
+
+describe("khách hàng", () => {
+  const valid = () => ({
+    name: "Chị Lan", phone: "0900000000", type: "agent", note: "",
+    createdBy: "u1", createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+  });
+
+  test("thành viên tạo và sửa thông tin khách", async () => {
+    await assertSucceeds(setDoc(doc(member(), "shops", SHOP, "customers", "c1"), valid()));
+    await assertSucceeds(
+      updateDoc(doc(member(), "shops", SHOP, "customers", "c1"), { phone: "0911111111", updatedAt: serverTimestamp() }),
+    );
+  });
+
+  test("client không tự ghi công nợ hay doanh số", async () => {
+    await assertFails(setDoc(doc(member(), "shops", SHOP, "customers", "c2"), { ...valid(), debtBalance: 0 }));
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "shops", SHOP, "customers", "c3"), {
+        name: "Anh Ba", type: "retail", createdBy: "u1", createdAt: new Date(0), updatedAt: new Date(0), debtBalance: 1_000_000,
+      });
+    });
+    await assertFails(
+      updateDoc(doc(member(), "shops", SHOP, "customers", "c3"), { debtBalance: 0, updatedAt: serverTimestamp() }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(member(), "shops", SHOP, "customers", "c3"), { name: "Anh Ba Bến Tre", updatedAt: serverTimestamp() }),
+    );
+  });
+
+  test("chặn loại khách lạ, người ngoài, xóa", async () => {
+    await assertFails(setDoc(doc(member(), "shops", SHOP, "customers", "c4"), { ...valid(), type: "vip" }));
+    await assertFails(setDoc(doc(outsider(), "shops", SHOP, "customers", "c4"), { ...valid(), createdBy: "u9" }));
+    await assertSucceeds(setDoc(doc(member(), "shops", SHOP, "customers", "c5"), valid()));
+    await assertFails(deleteDoc(doc(member(), "shops", SHOP, "customers", "c5")));
+  });
+
+  test("client không ghi được đơn bán, phiếu thu, stats", async () => {
+    await assertFails(setDoc(doc(member(), "shops", SHOP, "sales", "s1"), { total: 1 }));
+    await assertFails(setDoc(doc(member(), "shops", SHOP, "payments", "p1"), { amount: 1 }));
+    await assertFails(setDoc(doc(member(), "shops", SHOP, "stats", "2026-10"), { revenue: 1 }));
+  });
+});
