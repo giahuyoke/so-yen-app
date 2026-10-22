@@ -26,6 +26,7 @@ export function MoneyInput({ value, onChange, placeholder, disabled }: MoneyInpu
         setText(event.target.value);
         onChange?.(parseMoney(event.target.value));
       }}
+      onFocus={(event) => event.target.select()}
       onBlur={() => setText(null)}
     />
   );
