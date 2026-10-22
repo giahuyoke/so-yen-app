@@ -2,9 +2,6 @@
   "name": "so-yen",
   "version": "0.1.0",
   "private": true,
-  "engines": {
-    "node": "22.x"
-  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -42,6 +39,9 @@
   },
   "overrides": {
     "@firebase/app": "0.16.2",
-    "@firebase/app-compat": "0.5.18"
+    "@firebase/app-compat": "0.5.18",
+    "jwks-rsa": {
+      "jose": "^5.10.0"
+    }
   }
 }
