@@ -6,7 +6,9 @@ import {
   findMyShop,
   inviteMember,
   removeMember,
+  updateTaxConfig,
 } from "@/server/services/membership";
+import { DEFAULT_TAX_CONFIG } from "@/lib/domain/tax";
 import { clearFirestore, db, owner, seedShop, SHOP_ID, sister, stranger } from "./helpers";
 
 beforeEach(clearFirestore);
@@ -80,6 +82,22 @@ describe("inviteMember / cancelInvite / removeMember", () => {
     await seedShop();
     await expect(assertMember(db(), SHOP_ID, stranger.uid)).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(assertMember(db(), "no_such_shop", owner.uid)).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+});
+
+describe("updateTaxConfig", () => {
+  test("lưu cấu hình thuế hợp lệ", async () => {
+    await seedShop();
+    const config = { ...DEFAULT_TAX_CONFIG, exemptThreshold: 600_000_000 };
+    await updateTaxConfig(db(), SHOP_ID, config);
+    expect((await db().collection("shops").doc(SHOP_ID).get()).get("taxConfig")).toEqual(config);
+  });
+
+  test("từ chối mốc thứ hai nhỏ hơn mốc miễn thuế hoặc tỷ lệ âm", async () => {
+    await seedShop();
+    await expect(updateTaxConfig(db(), SHOP_ID, { ...DEFAULT_TAX_CONFIG, invoiceThreshold: 400_000_000 })).rejects.toThrow();
+    const rates = { ...DEFAULT_TAX_CONFIG.rates, resale: { vat: -1, pit: 0 } };
+    await expect(updateTaxConfig(db(), SHOP_ID, { ...DEFAULT_TAX_CONFIG, rates })).rejects.toThrow();
   });
 });
 

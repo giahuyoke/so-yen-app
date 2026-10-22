@@ -1,12 +1,14 @@
 "use client";
 
-import { ExperimentOutlined, InboxOutlined, RightOutlined } from "@ant-design/icons";
+import { BarChartOutlined, ExperimentOutlined, InboxOutlined, RightOutlined, WalletOutlined } from "@ant-design/icons";
 import { Card, Empty, Skeleton, Tag } from "antd";
 import Link from "next/link";
-import { useCustomers, useMonthStats, useProducts, useTodaySales, useTopDebtors } from "@/hooks/use-shop-data";
+import { TaxMeter } from "@/components/reports/tax-meter";
+import { useCustomers, useMonthStats, useProducts, useStatsRange, useTaxConfig, useTodaySales, useTopDebtors } from "@/hooks/use-shop-data";
 import { monthKey, todayVN } from "@/lib/domain/dates";
 import { PRODUCT_KIND_LABEL } from "@/lib/domain/models";
 import { formatPercent, formatQty, formatVnd } from "@/lib/domain/money";
+import { forecastYearRevenue } from "@/lib/domain/tax";
 
 function Tile({ label, value, hint, tone = "ink" }: { label: string; value: string; hint?: string; tone?: "ink" | "debt" }) {
   return (
@@ -37,12 +39,21 @@ export default function DashboardPage() {
   const debtors = useTopDebtors();
   const customers = useCustomers();
   const products = useProducts();
+  const year = Number(today.slice(0, 4));
+  const yearStats = useStatsRange(`${year - 1}-01`, `${year}-12`);
+  const taxConfig = useTaxConfig();
+  const forecast = forecastYearRevenue(
+    year,
+    Number(month.slice(5)),
+    Object.fromEntries(yearStats.data.map((s) => [s.id, s.revenue ?? 0])),
+  );
 
   const active = todaySales.data.filter((s) => s.status === "active");
   const todayRevenue = active.reduce((sum, s) => sum + s.total, 0);
   const todayCogs = active.reduce((sum, s) => sum + s.lines.reduce((x, l) => x + l.totalCost, 0), 0);
   const monthRevenue = stats.data?.revenue ?? 0;
   const monthProfit = monthRevenue - (stats.data?.cogs ?? 0);
+  const monthNet = monthProfit - (stats.data?.expenses ?? 0);
   const totalDebt = customers.data.reduce((sum, c) => sum + (c.debtBalance ?? 0), 0);
   const lowStock = products.data.filter((p) => !p.archived && p.lowStockThreshold > 0 && p.stockQty <= p.lowStockThreshold);
 
@@ -61,6 +72,7 @@ export default function DashboardPage() {
             Lãi gộp {formatVnd(monthProfit)}
             {monthRevenue > 0 && ` · ${formatPercent(monthProfit / monthRevenue)}`}
           </span>
+          <span className="rounded-full bg-brand-dark px-3 py-1">Lãi ròng {formatVnd(monthNet)}</span>
           <span className="rounded-full bg-brand-dark px-3 py-1">{stats.data?.saleCount ?? 0} đơn</span>
         </div>
       </section>
@@ -71,13 +83,19 @@ export default function DashboardPage() {
           value={formatVnd(todayRevenue)}
           hint={`${active.length} đơn · lãi ${formatVnd(todayRevenue - todayCogs)}`}
         />
-        <Tile label="Công nợ" value={formatVnd(totalDebt)} hint={`${debtors.data.length} khách đang nợ`} tone="debt" />
+        <Tile label="Công nợ" value={formatVnd(totalDebt)} hint={`${customers.data.filter((c) => (c.debtBalance ?? 0) > 0).length} khách đang nợ`} tone="debt" />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <Shortcut href="/kho/nhap" icon={<InboxOutlined />} label="Nhập kho" />
         <Shortcut href="/kho/che-bien" icon={<ExperimentOutlined />} label="Chế biến" />
+        <Shortcut href="/chi-phi" icon={<WalletOutlined />} label="Chi phí" />
+        <Shortcut href="/bao-cao" icon={<BarChartOutlined />} label="Báo cáo" />
       </div>
+
+      <Card title={`Đồng hồ thuế ${year}`} loading={yearStats.loading || taxConfig.loading} extra={<Link href="/thue">Chi tiết</Link>}>
+        <TaxMeter actual={forecast.actual} forecast={forecast.forecast} config={taxConfig.data} />
+      </Card>
 
       <Card title="Khách đang nợ" loading={debtors.loading} extra={<Link href="/khach-hang">Tất cả</Link>}>
         {debtors.data.length === 0 ? (

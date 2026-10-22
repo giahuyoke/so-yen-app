@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  EXPENSE_CATEGORIES,
   PAYMENT_METHODS,
   PRODUCT_KINDS,
   PRODUCTION_KINDS,
@@ -31,10 +32,17 @@ export const productInput = z.object({
   suggestedPrice: money,
   lowStockThreshold: z.number().int().min(0, "Không được âm"),
   taxGroup: z.enum(TAX_GROUPS),
+  gramPerUnit: z
+    .number()
+    .int("Phải là số nguyên")
+    .positive("Phải lớn hơn 0")
+    .max(100_000)
+    .nullable()
+    .default(null),
 });
 
 export const productUpdateInput = productInput
-  .pick({ id: true, name: true, suggestedPrice: true, lowStockThreshold: true, taxGroup: true })
+  .pick({ id: true, name: true, suggestedPrice: true, lowStockThreshold: true, taxGroup: true, gramPerUnit: true })
   .extend({ archived: z.boolean() });
 
 export const receiptInput = z.object({
@@ -106,15 +114,48 @@ export const saleInput = z.object({
   paid: money,
 });
 
+const positiveMoney = z
+  .number("Nhập số tiền")
+  .int("Số tiền phải là số nguyên")
+  .positive("Số tiền phải lớn hơn 0")
+  .max(100_000_000_000, "Số tiền quá lớn");
+
 export const paymentInput = z.object({
   id,
   customerId: id,
   date,
-  amount: z
-    .number("Nhập số tiền")
-    .int("Số tiền phải là số nguyên")
-    .positive("Số tiền phải lớn hơn 0")
-    .max(100_000_000_000, "Số tiền quá lớn"),
+  amount: positiveMoney,
   method: z.enum(PAYMENT_METHODS),
   note,
 });
+
+export const expenseInput = z.object({
+  id,
+  date,
+  category: z.enum(EXPENSE_CATEGORIES),
+  amount: positiveMoney,
+  note,
+});
+
+const percent = z
+  .number("Nhập tỷ lệ")
+  .min(0, "Tỷ lệ không được âm")
+  .max(100, "Tỷ lệ tối đa 100%")
+  .refine((n) => Math.abs(n * 100 - Math.round(n * 100)) < 1e-6, "Tối đa 2 chữ số thập phân");
+
+export const taxConfigInput = z
+  .object({
+    exemptThreshold: money.refine((n) => n > 0, "Mốc phải lớn hơn 0"),
+    invoiceThreshold: money.refine((n) => n > 0, "Mốc phải lớn hơn 0"),
+    pitOnExcessOnly: z.boolean(),
+    rates: z.object(
+      Object.fromEntries(TAX_GROUPS.map((g) => [g, z.object({ vat: percent, pit: percent })])) as Record<
+        (typeof TAX_GROUPS)[number],
+        z.ZodObject<{ vat: typeof percent; pit: typeof percent }>
+      >,
+    ),
+  })
+  .refine((c) => c.invoiceThreshold > c.exemptThreshold, {
+    message: "Mốc thứ hai phải lớn hơn mốc miễn thuế",
+    path: ["invoiceThreshold"],
+  });

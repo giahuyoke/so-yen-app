@@ -1,7 +1,8 @@
 "use client";
 
 import { PlusOutlined } from "@ant-design/icons";
-import { App, Button, Card, Drawer, Empty, Form, Input, List } from "antd";
+import { App, Button, Card, Drawer, Empty, Form, Input } from "antd";
+import { ItemList, ListItem, ListItemMeta } from "@/components/common/item-list";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useShop } from "@/components/shop/shop-provider";
@@ -36,12 +37,12 @@ export default function SuppliersPage() {
         {suppliers.length === 0 ? (
           <Empty description="Chưa có nhà cung cấp" />
         ) : (
-          <List
+          <ItemList
             dataSource={suppliers}
             renderItem={(s) => (
-              <List.Item className="cursor-pointer" onClick={() => openDrawer(s)}>
-                <List.Item.Meta title={s.name} description={[s.phone, s.note].filter(Boolean).join(" · ")} />
-              </List.Item>
+              <ListItem className="cursor-pointer" onClick={() => openDrawer(s)}>
+                <ListItemMeta title={s.name} description={[s.phone, s.note].filter(Boolean).join(" · ")} />
+              </ListItem>
             )}
           />
         )}

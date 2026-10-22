@@ -25,6 +25,24 @@ describe("createProduct", () => {
   });
 });
 
+describe("gramPerUnit", () => {
+  const jar = { id: P.steamed, name: "Yến chưng 70ml", kind: "steamed", unit: "piece", suggestedPrice: 75_000, lowStockThreshold: 0, taxGroup: "processed" };
+
+  test("lưu cho hàng tính theo cái, bỏ qua với hàng tính theo gram", async () => {
+    await createProduct(db(), SHOP_ID, owner, { ...jar, gramPerUnit: 3 });
+    await createProduct(db(), SHOP_ID, owner, { ...input, gramPerUnit: 5 });
+    expect((await getProduct(P.steamed)).gramPerUnit).toBe(3);
+    expect((await getProduct(P.raw)).gramPerUnit).toBeNull();
+  });
+
+  test("sửa được khi cập nhật sản phẩm", async () => {
+    await createProduct(db(), SHOP_ID, owner, jar);
+    expect((await getProduct(P.steamed)).gramPerUnit).toBeNull();
+    await updateProduct(db(), SHOP_ID, { ...jar, gramPerUnit: 4, archived: false });
+    expect((await getProduct(P.steamed)).gramPerUnit).toBe(4);
+  });
+});
+
 describe("updateProduct", () => {
   test("sửa tên, giá và lưu trữ; không đổi tồn", async () => {
     await createProduct(db(), SHOP_ID, owner, input);

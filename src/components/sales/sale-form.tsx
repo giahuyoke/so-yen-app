@@ -14,13 +14,14 @@ import { useCustomers, useProducts } from "@/hooks/use-shop-data";
 import { todayVN } from "@/lib/domain/dates";
 import { newId } from "@/lib/domain/ids";
 import { SALE_CHANNEL_LABEL, SALE_CHANNELS, SELLABLE_KINDS, type SaleChannel } from "@/lib/domain/models";
-import { formatQty, formatVnd } from "@/lib/domain/money";
+import { formatQty, formatVnd, fromDisplayPrice, GRAMS_PER_PRICE_UNIT, priceUnitLabel, toDisplayPrice } from "@/lib/domain/money";
 import { computeSale, saleSummaryText } from "@/lib/domain/sale";
 import { createSaleAction } from "@/server/actions/sales";
 
 interface Line {
   productId?: string;
   qty?: number;
+  /** Giá hiển thị: ₫/100g với hàng tính theo gram, ₫/cái với hàng tính theo cái. */
   price?: number | null;
 }
 
@@ -44,13 +45,21 @@ export function SaleForm({ onNew }: { onNew: () => void }) {
   const [saving, setSaving] = useState(false);
   const [customerDrawer, setCustomerDrawer] = useState(false);
   const [done, setDone] = useState<{ code: string; summary: string } | null>(null);
+  // "Khách trả" tự bằng tổng đơn cho tới khi người dùng tự sửa số tiền.
+  const [paidTouched, setPaidTouched] = useState(false);
+
+  const unitOf = (productId?: string) => (productId ? products.byId.get(productId)?.unit : undefined) ?? "g";
+  /** Giá theo 1 đơn vị lưu kho (₫/g hoặc ₫/cái); có thể lẻ khi đang gõ, chỉ dùng để xem trước. */
+  const perUnit = (l?: Line) => (unitOf(l?.productId) === "g" ? (l?.price ?? 0) / GRAMS_PER_PRICE_UNIT : (l?.price ?? 0));
+  const totalOf = (v: Partial<Values>) =>
+    computeSale((v.lines ?? []).map((l) => ({ qty: l?.qty ?? 0, price: perUnit(l) })), v.discount ?? 0, 0).total;
 
   const lines = Form.useWatch("lines", form) ?? [];
   const discount = Form.useWatch("discount", form) ?? 0;
   const paid = Form.useWatch("paid", form);
   const customerId = Form.useWatch("customerId", form);
   const totals = computeSale(
-    lines.map((l) => ({ qty: l?.qty ?? 0, price: l?.price ?? 0 })),
+    lines.map((l) => ({ qty: l?.qty ?? 0, price: perUnit(l) })),
     discount ?? 0,
     paid ?? 0,
   );
@@ -67,8 +76,10 @@ export function SaleForm({ onNew }: { onNew: () => void }) {
           // Chọn sản phẩm thì điền sẵn giá bán gợi ý.
           changed.lines?.forEach((line, index) => {
             const product = line?.productId ? products.byId.get(line.productId) : undefined;
-            if (product) form.setFieldValue(["lines", index, "price"], product.suggestedPrice);
+            if (product) form.setFieldValue(["lines", index, "price"], toDisplayPrice(product.suggestedPrice, product.unit));
           });
+          if ("paid" in changed) setPaidTouched(true);
+          else if (!paidTouched) form.setFieldValue("paid", Math.max(0, totalOf(form.getFieldsValue())));
         }}
         onFinish={async (values) => {
           setSaving(true);
@@ -78,7 +89,11 @@ export function SaleForm({ onNew }: { onNew: () => void }) {
             customerId: values.customerId ?? null,
             channel: values.channel,
             note: values.note ?? "",
-            lines: values.lines.map((l) => ({ productId: l.productId, qty: l.qty, price: l.price ?? 0 })),
+            lines: values.lines.map((l) => ({
+              productId: l.productId,
+              qty: l.qty,
+              price: fromDisplayPrice(l.price ?? 0, unitOf(l.productId)) ?? 0,
+            })),
             discount: values.discount ?? 0,
             paid: values.paid ?? 0,
           };
@@ -107,7 +122,7 @@ export function SaleForm({ onNew }: { onNew: () => void }) {
       >
         <Card>
           <div className="flex items-end gap-2">
-            <Form.Item className="mb-0! flex-1" name="customerId" label="Khách hàng">
+            <Form.Item className="mb-0! min-w-0 flex-1" name="customerId" label="Khách hàng">
               <Select
                 allowClear
                 placeholder="Khách lẻ"
@@ -137,6 +152,7 @@ export function SaleForm({ onNew }: { onNew: () => void }) {
                 const line = lines[field.name];
                 const product = line?.productId ? products.byId.get(line.productId) : undefined;
                 const unit = product?.unit === "piece" ? "cái" : "g";
+                const priceUnit = priceUnitLabel(product?.unit ?? "g");
                 return (
                   <Card
                     key={field.key}
@@ -157,9 +173,18 @@ export function SaleForm({ onNew }: { onNew: () => void }) {
                       </Form.Item>
                       <Form.Item
                         name={[field.name, "price"]}
-                        label={`Đơn giá (₫/${unit})`}
-                        rules={[{ required: true, type: "number", min: 0, message: "Nhập giá" }]}
-                        extra={line?.qty && line?.price ? `= ${formatVnd(line.qty * line.price)}` : undefined}
+                        label={`Đơn giá (₫/${priceUnit})`}
+                        rules={[
+                          { required: true, type: "number", min: 0, message: "Nhập giá" },
+                          {
+                            validator: async (_, value: number | null) => {
+                              if (value != null && fromDisplayPrice(value, product?.unit ?? "g") === null) {
+                                throw new Error("Giá cho 100g phải tròn tới 100 ₫");
+                              }
+                            },
+                          },
+                        ]}
+                        extra={line?.qty && line?.price ? `= ${formatVnd(Math.round(line.qty * perUnit(line)))}` : undefined}
                       >
                         <MoneyInput />
                       </Form.Item>
@@ -191,13 +216,8 @@ export function SaleForm({ onNew }: { onNew: () => void }) {
               onClick={() => {
                 // Đọc form ngay lúc bấm: giá trị từ useWatch có thể chưa kịp cập nhật
                 // khi vừa gõ số lượng xong là bấm luôn.
-                const v = form.getFieldsValue();
-                const current = computeSale(
-                  (v.lines ?? []).map((l) => ({ qty: l?.qty ?? 0, price: l?.price ?? 0 })),
-                  v.discount ?? 0,
-                  0,
-                );
-                form.setFieldValue("paid", current.total);
+                form.setFieldValue("paid", Math.max(0, totalOf(form.getFieldsValue())));
+                setPaidTouched(false);
               }}
             >
               Trả đủ

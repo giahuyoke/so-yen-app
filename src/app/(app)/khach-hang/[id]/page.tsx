@@ -1,7 +1,8 @@
 "use client";
 
 import { EditOutlined } from "@ant-design/icons";
-import { Button, Card, Empty, Form, Input, List, Modal, Result, Segmented, Tabs, Tag } from "antd";
+import { Button, Card, Empty, Form, Input, Modal, Result, Segmented, Tabs, Tag } from "antd";
+import { ItemList, ListItem, ListItemMeta } from "@/components/common/item-list";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -9,12 +10,14 @@ import { DateField } from "@/components/common/date-field";
 import { MoneyInput } from "@/components/common/money-input";
 import { useRunAction } from "@/components/common/use-run-action";
 import { VoidModal } from "@/components/common/void-modal";
+import { DebtTag } from "@/components/sales/debt-tag";
 import { CustomerDrawer } from "@/components/customers/customer-drawer";
 import { useShop } from "@/components/shop/shop-provider";
 import { useCustomerPayments, useCustomers, useCustomerSales } from "@/hooks/use-shop-data";
 import { formatDate, todayVN } from "@/lib/domain/dates";
 import { newId } from "@/lib/domain/ids";
 import { CUSTOMER_TYPE_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_METHODS, type PaymentDoc, type PaymentMethod } from "@/lib/domain/models";
+import { remainingDebtBySale } from "@/lib/domain/debt";
 import { formatVnd } from "@/lib/domain/money";
 import { createPaymentAction, voidPaymentAction } from "@/server/actions/sales";
 
@@ -44,6 +47,7 @@ export default function CustomerDetailPage() {
     return <Result status="404" title="Không tìm thấy khách hàng" extra={<Link href="/khach-hang"><Button>Về danh sách</Button></Link>} />;
   }
   const debt = customer.debtBalance ?? 0;
+  const remaining = remainingDebtBySale(sales.data, debt);
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -87,15 +91,15 @@ export default function CustomerDetailPage() {
                 {sales.data.length === 0 ? (
                   <Empty description="Chưa có đơn" />
                 ) : (
-                  <List
+                  <ItemList
                     dataSource={sales.data}
                     renderItem={(s) => (
-                      <List.Item extra={s.status === "voided" ? <Tag>Đã hủy</Tag> : s.debt > 0 ? <Tag color="error">nợ {formatVnd(s.debt)}</Tag> : null}>
-                        <List.Item.Meta
+                      <ListItem extra={s.status === "voided" ? <Tag>Đã hủy</Tag> : <DebtTag sale={s} remaining={remaining.get(s.id) ?? 0} loading={sales.loading} />}>
+                        <ListItemMeta
                           title={<span className={s.status === "voided" ? "line-through opacity-60" : ""}>{s.code}</span>}
                           description={`${formatDate(s.date)} · ${formatVnd(s.total)}`}
                         />
-                      </List.Item>
+                      </ListItem>
                     )}
                   />
                 )}
@@ -110,23 +114,23 @@ export default function CustomerDetailPage() {
                 {payments.data.length === 0 ? (
                   <Empty description="Chưa có phiếu thu" />
                 ) : (
-                  <List
+                  <ItemList
                     dataSource={payments.data}
                     renderItem={(p) => (
-                      <List.Item
+                      <ListItem
                         actions={
                           p.status === "active"
                             ? [<Button key="void" danger size="small" onClick={() => setVoiding(p)}>Hủy</Button>]
                             : [<Tag key="voided">Đã hủy</Tag>]
                         }
                       >
-                        <List.Item.Meta
+                        <ListItemMeta
                           title={<span className={p.status === "voided" ? "line-through opacity-60" : ""}>{formatVnd(p.amount)}</span>}
                           description={[formatDate(p.date), PAYMENT_METHOD_LABEL[p.method], p.note, p.voidReason && `Lý do hủy: ${p.voidReason}`]
                             .filter(Boolean)
                             .join(" · ")}
                         />
-                      </List.Item>
+                      </ListItem>
                     )}
                   />
                 )}

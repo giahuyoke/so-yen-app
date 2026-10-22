@@ -10,11 +10,10 @@ import { useRunAction } from "@/components/common/use-run-action";
 import { ProductSelect } from "@/components/inventory/product-select";
 import { useShop } from "@/components/shop/shop-provider";
 import { useProducts, useSuppliers } from "@/hooks/use-shop-data";
-import { unitCostOf } from "@/lib/domain/costing";
 import { todayVN } from "@/lib/domain/dates";
 import { newId } from "@/lib/domain/ids";
 import { RECEIPT_ALLOWED_KINDS, RECEIPT_KIND_LABEL, RECEIPT_KINDS, type ReceiptKind } from "@/lib/domain/models";
-import { formatVnd } from "@/lib/domain/money";
+import { formatCostPer, formatVnd } from "@/lib/domain/money";
 import { createReceiptAction } from "@/server/actions/inventory";
 
 interface Values {
@@ -109,7 +108,7 @@ export default function ReceiptPage() {
                           name={[field.name, "totalCost"]}
                           label="Thành tiền"
                           rules={[{ required: true, type: "number", min: 0, message: "Nhập số tiền" }]}
-                          extra={line?.qty && line?.totalCost ? `≈ ${formatVnd(unitCostOf(line.totalCost, line.qty))}/${product?.unit === "piece" ? "cái" : "g"}` : undefined}
+                          extra={line?.qty && line?.totalCost ? `≈ ${formatCostPer(line.totalCost, line.qty, product?.unit ?? "g")}` : undefined}
                         >
                           <MoneyInput />
                         </Form.Item>

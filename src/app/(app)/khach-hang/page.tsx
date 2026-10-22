@@ -1,7 +1,8 @@
 "use client";
 
 import { PlusOutlined } from "@ant-design/icons";
-import { Button, Card, Empty, Input, List, Segmented, Tag } from "antd";
+import { Button, Card, Empty, Input, Segmented, Tag } from "antd";
+import { ItemList, ListItem, ListItemMeta } from "@/components/common/item-list";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CustomerDrawer } from "@/components/customers/customer-drawer";
@@ -47,15 +48,15 @@ export default function CustomersPage() {
         {shown.length === 0 ? (
           <Empty description="Chưa có khách hàng" />
         ) : (
-          <List
+          <ItemList
             dataSource={shown}
             renderItem={(c) => (
-              <List.Item
+              <ListItem
                 className="cursor-pointer"
                 onClick={() => router.push(`/khach-hang/${c.id}`)}
                 extra={(c.debtBalance ?? 0) > 0 ? <Tag color="error" className="m-0!">nợ {formatVnd(c.debtBalance ?? 0)}</Tag> : null}
               >
-                <List.Item.Meta
+                <ListItemMeta
                   title={c.name}
                   description={[
                     CUSTOMER_TYPE_LABEL[c.type],
@@ -66,7 +67,7 @@ export default function CustomersPage() {
                     .filter(Boolean)
                     .join(" · ")}
                 />
-              </List.Item>
+              </ListItem>
             )}
           />
         )}

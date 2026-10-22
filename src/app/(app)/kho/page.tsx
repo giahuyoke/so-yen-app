@@ -1,13 +1,14 @@
 "use client";
 
 import { PlusOutlined } from "@ant-design/icons";
-import { Button, Card, Empty, List, Segmented, Tag } from "antd";
+import { Button, Card, Empty, Segmented, Tag } from "antd";
+import { ItemList, ListItem, ListItemMeta } from "@/components/common/item-list";
 import Link from "next/link";
 import { useState } from "react";
 import { ProductDrawer } from "@/components/products/product-drawer";
 import { useProducts } from "@/hooks/use-shop-data";
 import { PRODUCT_KIND_LABEL, PRODUCT_KINDS, type Product, type ProductKind } from "@/lib/domain/models";
-import { formatQty, formatVnd } from "@/lib/domain/money";
+import { formatQty, formatUnitPrice } from "@/lib/domain/money";
 
 type Filter = ProductKind | "all" | "archived";
 
@@ -62,12 +63,12 @@ export default function InventoryPage() {
         {shown.length === 0 ? (
           <Empty description="Chưa có sản phẩm. Bấm “+ Sản phẩm” để tạo." />
         ) : (
-          <List
+          <ItemList
             dataSource={shown}
             renderItem={(p) => {
               const low = p.lowStockThreshold > 0 && p.stockQty <= p.lowStockThreshold;
               return (
-                <List.Item
+                <ListItem
                   className="cursor-pointer"
                   onClick={() => openDrawer(p)}
                   extra={
@@ -77,11 +78,11 @@ export default function InventoryPage() {
                     </div>
                   }
                 >
-                  <List.Item.Meta
+                  <ListItemMeta
                     title={p.name}
-                    description={`${PRODUCT_KIND_LABEL[p.kind]} · giá vốn ${formatVnd(p.avgCost)}/${p.unit === "g" ? "g" : "cái"}`}
+                    description={`${PRODUCT_KIND_LABEL[p.kind]} · giá vốn ${formatUnitPrice(p.avgCost, p.unit)}`}
                   />
-                </List.Item>
+                </ListItem>
               );
             }}
           />

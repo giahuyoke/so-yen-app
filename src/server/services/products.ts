@@ -11,6 +11,7 @@ export async function createProduct(db: Firestore, shopId: string, actor: Actor,
     if ((await tx.get(ref)).exists) return;
     tx.set(ref, {
       ...fields,
+      gramPerUnit: fields.unit === "piece" ? fields.gramPerUnit : null,
       stockQty: 0,
       avgCost: 0,
       archived: false,
@@ -26,7 +27,9 @@ export async function createProduct(db: Firestore, shopId: string, actor: Actor,
 export async function updateProduct(db: Firestore, shopId: string, input: unknown) {
   const { id, ...fields } = productUpdateInput.parse(input);
   const ref = shopRef(db, shopId).collection("products").doc(id);
-  if (!(await ref.get()).exists) throw new AppError("NOT_FOUND", "Không tìm thấy sản phẩm.");
-  await ref.update({ ...fields, updatedAt: FieldValue.serverTimestamp() });
+  const snap = await ref.get();
+  if (!snap.exists) throw new AppError("NOT_FOUND", "Không tìm thấy sản phẩm.");
+  const gramPerUnit = snap.get("unit") === "piece" ? fields.gramPerUnit : null;
+  await ref.update({ ...fields, gramPerUnit, updatedAt: FieldValue.serverTimestamp() });
   return { id };
 }

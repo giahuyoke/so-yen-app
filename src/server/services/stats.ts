@@ -1,5 +1,5 @@
 import { FieldValue, type DocumentReference, type Transaction } from "firebase-admin/firestore";
-import type { StatsDelta } from "@/lib/domain/stats";
+import type { ExpenseStatsDelta, StatsDelta } from "@/lib/domain/stats";
 
 const inc = (n: number) => FieldValue.increment(n);
 
@@ -22,6 +22,18 @@ export function writeSaleStats(tx: Transaction, shop: DocumentReference, month: 
       byChannel: mapValues(delta.byChannel, (c) => ({ revenue: inc(c.revenue), cogs: inc(c.cogs), count: inc(c.count) })),
       byProduct: mapValues(delta.byProduct, (p) => ({ qty: inc(p.qty), revenue: inc(p.revenue), cogs: inc(p.cogs) })),
       byTaxGroup: mapValues(delta.byTaxGroup, inc),
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
+export function writeExpenseStats(tx: Transaction, shop: DocumentReference, month: string, delta: ExpenseStatsDelta) {
+  tx.set(
+    shop.collection("stats").doc(month),
+    {
+      expenses: inc(delta.expenses),
+      expensesByCategory: mapValues(delta.expensesByCategory, inc),
       updatedAt: FieldValue.serverTimestamp(),
     },
     { merge: true },

@@ -26,6 +26,8 @@ export interface Product {
   stockQty: number;
   avgCost: number;
   archived: boolean;
+  /** Gram yến trong một cái (hũ chưng, hộp quà), điền sẵn khi chế biến. */
+  gramPerUnit?: number | null;
 }
 
 export interface Supplier {
@@ -212,14 +214,25 @@ export interface PaymentDoc extends DocBase {
   note: string;
 }
 
+export const EXPENSE_CATEGORIES = ["nest", "shipping", "ads", "platform_fee", "other"] as const;
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
+
+export interface ExpenseDoc extends DocBase {
+  category: ExpenseCategory;
+  amount: number;
+  note: string;
+}
+
 export interface MonthStats {
   id: string;
   revenue?: number;
   cogs?: number;
   saleCount?: number;
+  expenses?: number;
   byChannel?: Partial<Record<SaleChannel, { revenue: number; cogs: number; count: number }>>;
   byProduct?: Record<string, { qty: number; revenue: number; cogs: number }>;
   byTaxGroup?: Partial<Record<TaxGroup, number>>;
+  expensesByCategory?: Partial<Record<ExpenseCategory, number>>;
 }
 
 export const SALE_CHANNEL_LABEL: Record<SaleChannel, string> = {
@@ -238,4 +251,12 @@ export const CUSTOMER_TYPE_LABEL: Record<CustomerType, string> = {
 export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
   cash: "Tiền mặt",
   transfer: "Chuyển khoản",
+};
+
+export const EXPENSE_CATEGORY_LABEL: Record<ExpenseCategory, string> = {
+  nest: "Nhà yến",
+  shipping: "Vận chuyển",
+  ads: "Quảng cáo",
+  platform_fee: "Phí sàn",
+  other: "Khác",
 };

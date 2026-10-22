@@ -1,7 +1,7 @@
 import { allocateCost } from "@/lib/domain/costing";
 import { formatDate } from "@/lib/domain/dates";
 import type { Unit } from "@/lib/domain/models";
-import { formatQty, formatVnd } from "@/lib/domain/money";
+import { formatQty, formatUnitPrice, formatVnd } from "@/lib/domain/money";
 
 export interface SaleLineInput {
   qty: number;
@@ -63,7 +63,7 @@ export function saleSummaryText(s: SaleSummary): string {
     s.shopName,
     `Đơn ${s.code} · ${formatDate(s.date)}`,
     ...s.lines.map(
-      (l) => `- ${l.name}: ${formatQty(l.qty, l.unit)} × ${formatVnd(l.price)} = ${formatVnd(l.qty * l.price)}`,
+      (l) => `- ${l.name}: ${formatQty(l.qty, l.unit)} × ${formatUnitPrice(l.price, l.unit)} = ${formatVnd(l.qty * l.price)}`,
     ),
     `Tạm tính: ${formatVnd(s.subtotal)}`,
   ];

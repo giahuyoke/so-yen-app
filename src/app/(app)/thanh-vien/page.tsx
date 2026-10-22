@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Card, Form, Input, List, Popconfirm, Tag } from "antd";
+import { Button, Card, Form, Input, Popconfirm, Tag } from "antd";
+import { ItemList, ListItem, ListItemMeta } from "@/components/common/item-list";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useRunAction } from "@/components/common/use-run-action";
@@ -45,10 +46,10 @@ export default function MembersPage() {
       </Card>
 
       <Card title="Thành viên" loading={members.loading}>
-        <List
+        <ItemList
           dataSource={members.data}
           renderItem={(m) => (
-            <List.Item
+            <ListItem
               actions={
                 m.id === user?.uid
                   ? [<Tag key="me">Bạn</Tag>]
@@ -67,18 +68,18 @@ export default function MembersPage() {
                       ]
               }
             >
-              <List.Item.Meta title={m.displayName} description={m.email} />
-            </List.Item>
+              <ListItemMeta title={m.displayName} description={m.email} />
+            </ListItem>
           )}
         />
       </Card>
 
       {invites.data.length > 0 && (
         <Card title="Lời mời đang chờ">
-          <List
+          <ItemList
             dataSource={invites.data}
             renderItem={(i) => (
-              <List.Item
+              <ListItem
                 actions={[
                   <Button key="cancel" size="small" onClick={() => run(cancelInviteAction(shop.id, { email: i.email }), { success: "Đã hủy lời mời" })}>
                     Hủy
@@ -86,7 +87,7 @@ export default function MembersPage() {
                 ]}
               >
                 {i.email}
-              </List.Item>
+              </ListItem>
             )}
           />
         </Card>

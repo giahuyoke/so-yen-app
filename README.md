@@ -16,6 +16,17 @@ npm run emulators   # terminal 1: Auth + Firestore emulator, UI ở http://local
 npm run dev         # terminal 2: http://localhost:3000
 ```
 
+### Dữ liệu mẫu
+
+```bash
+npm run seed:demo   # cần emulator đang chạy; chạy lại thì xóa và nạp lại cửa hàng mẫu
+```
+
+Tạo cửa hàng "Yến Sào Demo" với khoảng 16 tháng nhập kho, chế biến, bán hàng, thu nợ
+và chi phí (có cả chứng từ đã hủy), đủ để thử báo cáo, đồng hồ thuế và xuất Excel.
+Đăng nhập bằng "Tiếp tục với Google" rồi chọn tài khoản **Chủ Demo** trong màn hình
+của Auth Emulator. Script chỉ ghi vào Emulator (project `demo-*`).
+
 ## Kiểm thử
 
 ```bash

@@ -17,33 +17,53 @@ import {
   UNITS,
   type Product,
   type ProductKind,
+  type Unit,
 } from "@/lib/domain/models";
+import { fromDisplayPrice, priceUnitLabel, toDisplayPrice } from "@/lib/domain/money";
 import { createProductAction, updateProductAction } from "@/server/actions/inventory";
 
 interface ProductDrawerProps {
   open: boolean;
   product: Product | null;
   onClose: () => void;
+  /** Loại được chọn khi tạo mới; mặc định mọi loại, chọn sẵn loại đầu tiên. */
+  kinds?: ProductKind[];
+  /** Gọi với ID sản phẩm sau khi lưu thành công. */
+  onSaved?: (id: string) => void;
 }
 
-type Values = Pick<Product, "name" | "kind" | "unit" | "suggestedPrice" | "lowStockThreshold" | "taxGroup" | "archived">;
+/** `suggestedPrice` trong form là giá hiển thị: ₫/100g với hàng tính theo gram. */
+type Values = Pick<Product, "name" | "kind" | "unit" | "suggestedPrice" | "lowStockThreshold" | "taxGroup" | "archived"> & {
+  gramPerUnit?: number | null;
+};
 
-export function ProductDrawer({ open, product, onClose }: ProductDrawerProps) {
+/** Hũ chưng và hộp quà tính theo cái nhưng cần biết số gram yến khi chế biến. */
+const needsGramPerUnit = (kind?: ProductKind, unit?: Unit) => unit === "piece" && (kind === "steamed" || kind === "combo");
+
+export function ProductDrawer({ open, product, onClose, kinds = [...PRODUCT_KINDS], onSaved }: ProductDrawerProps) {
   const { shop } = useShop();
   const run = useRunAction();
   const [form] = Form.useForm<Values>();
   const [saving, setSaving] = useState(false);
   // Trang cha đổi `key` mỗi lần mở, nên mỗi lần mở có ID mới; ID giữ nguyên khi bấm Lưu lại sau lỗi mạng.
   const [draftId] = useState(newId);
+  const kind = Form.useWatch("kind", form);
+  const unit = Form.useWatch("unit", form) ?? "g";
 
   useEffect(() => {
     if (!open) return;
     form.resetFields();
-    if (product) form.setFieldsValue(product);
+    if (product) {
+      form.setFieldsValue({ ...product, suggestedPrice: toDisplayPrice(product.suggestedPrice, product.unit) });
+    } else {
+      const first = kinds[0];
+      form.setFieldsValue({ kind: first, unit: DEFAULT_UNIT[first], taxGroup: DEFAULT_TAX_GROUP[first] });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form, open, product]);
 
-  const onKindChange = (kind: ProductKind) => {
-    form.setFieldsValue({ unit: DEFAULT_UNIT[kind], taxGroup: DEFAULT_TAX_GROUP[kind] });
+  const onKindChange = (next: ProductKind) => {
+    form.setFieldsValue({ unit: DEFAULT_UNIT[next], taxGroup: DEFAULT_TAX_GROUP[next] });
   };
 
   return (
@@ -53,20 +73,35 @@ export function ProductDrawer({ open, product, onClose }: ProductDrawerProps) {
         layout="vertical"
         initialValues={{ kind: "raw", unit: "g", suggestedPrice: 0, lowStockThreshold: 0, taxGroup: "self_raw", archived: false }}
         onFinish={async (values) => {
+          const suggestedPrice = fromDisplayPrice(values.suggestedPrice, values.unit) ?? 0;
+          const gramPerUnit = needsGramPerUnit(values.kind, values.unit) ? (values.gramPerUnit ?? null) : null;
           setSaving(true);
           const pending = product
             ? updateProductAction(shop.id, {
                 id: product.id,
                 name: values.name,
-                suggestedPrice: values.suggestedPrice,
+                suggestedPrice,
                 lowStockThreshold: values.lowStockThreshold,
                 taxGroup: values.taxGroup,
+                gramPerUnit,
                 archived: values.archived,
               })
-            : createProductAction(shop.id, { ...values, id: draftId });
+            : createProductAction(shop.id, {
+                id: draftId,
+                name: values.name,
+                kind: values.kind,
+                unit: values.unit,
+                suggestedPrice,
+                lowStockThreshold: values.lowStockThreshold,
+                taxGroup: values.taxGroup,
+                gramPerUnit,
+              });
           const ok = await run(pending, { success: "Đã lưu sản phẩm", form });
           setSaving(false);
-          if (ok) onClose();
+          if (ok) {
+            onSaved?.(ok.id);
+            onClose();
+          }
         }}
       >
         <Form.Item name="name" label="Tên" rules={[{ required: true, message: "Nhập tên sản phẩm" }]}>
@@ -76,7 +111,7 @@ export function ProductDrawer({ open, product, onClose }: ProductDrawerProps) {
           <Select
             disabled={!!product}
             onChange={onKindChange}
-            options={PRODUCT_KINDS.map((k) => ({ value: k, label: PRODUCT_KIND_LABEL[k] }))}
+            options={(product ? PRODUCT_KINDS : kinds).map((k) => ({ value: k, label: PRODUCT_KIND_LABEL[k] }))}
           />
         </Form.Item>
         <Form.Item name="unit" label="Đơn vị" extra={product ? "Không đổi được đơn vị sau khi tạo." : undefined}>
@@ -84,13 +119,29 @@ export function ProductDrawer({ open, product, onClose }: ProductDrawerProps) {
         </Form.Item>
         <Form.Item
           name="suggestedPrice"
-          label="Giá bán gợi ý (cho 1 đơn vị)"
-          rules={[{ required: true, type: "number", min: 0, message: "Nhập giá hợp lệ" }]}
+          label={`Giá bán gợi ý (₫/${priceUnitLabel(unit)})`}
+          rules={[
+            { required: true, type: "number", min: 0, message: "Nhập giá hợp lệ" },
+            {
+              validator: async (_, value: number | null) => {
+                if (value != null && fromDisplayPrice(value, unit) === null) throw new Error("Giá cho 100g phải tròn tới 100 ₫");
+              },
+            },
+          ]}
         >
           <MoneyInput />
         </Form.Item>
+        {needsGramPerUnit(kind, unit) && (
+          <Form.Item
+            name="gramPerUnit"
+            label="Gram yến mỗi cái"
+            extra="Điền sẵn khi chưng hoặc đóng hộp. VD: hũ 70ml = 3g, hộp 6 hũ = 18g."
+          >
+            <InputNumber className="w-full!" min={1} precision={0} suffix="g" />
+          </Form.Item>
+        )}
         <Form.Item name="lowStockThreshold" label="Cảnh báo khi tồn còn" extra="Để 0 nếu không cần cảnh báo.">
-          <InputNumber className="w-full!" min={0} precision={0} />
+          <InputNumber className="w-full!" min={0} precision={0} suffix={unit === "g" ? "g" : "cái"} />
         </Form.Item>
         <Form.Item name="taxGroup" label="Nhóm thuế">
           <Select options={TAX_GROUPS.map((g) => ({ value: g, label: TAX_GROUP_LABEL[g] }))} />

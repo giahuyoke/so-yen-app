@@ -1,4 +1,4 @@
-import type { SaleChannel, SaleLine, TaxGroup } from "@/lib/domain/models";
+import type { ExpenseCategory, SaleChannel, SaleLine, TaxGroup } from "@/lib/domain/models";
 
 export interface StatsDelta {
   revenue: number;
@@ -27,4 +27,15 @@ export function saleStatsDelta(sale: { channel: SaleChannel; lines: StatsLine[] 
   }
   delta.byChannel[sale.channel] = { revenue: delta.revenue, cogs: delta.cogs, count: sign };
   return delta;
+}
+
+export interface ExpenseStatsDelta {
+  expenses: number;
+  expensesByCategory: Partial<Record<ExpenseCategory, number>>;
+}
+
+/** Phần cộng vào stats tháng của một khoản chi; sign = -1 khi hủy. */
+export function expenseStatsDelta(expense: { category: ExpenseCategory; amount: number }, sign: 1 | -1): ExpenseStatsDelta {
+  const amount = sign * expense.amount;
+  return { expenses: amount, expensesByCategory: { [expense.category]: amount } };
 }

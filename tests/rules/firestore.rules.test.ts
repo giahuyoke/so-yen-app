@@ -146,5 +146,6 @@ describe("khách hàng", () => {
     await assertFails(setDoc(doc(member(), "shops", SHOP, "sales", "s1"), { total: 1 }));
     await assertFails(setDoc(doc(member(), "shops", SHOP, "payments", "p1"), { amount: 1 }));
     await assertFails(setDoc(doc(member(), "shops", SHOP, "stats", "2026-10"), { revenue: 1 }));
+    await assertFails(setDoc(doc(member(), "shops", SHOP, "expenses", "e1"), { amount: 1 }));
   });
 });

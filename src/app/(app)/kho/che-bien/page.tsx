@@ -18,7 +18,7 @@ import {
   PRODUCTION_OUTPUT_KIND,
   type ProductionKind,
 } from "@/lib/domain/models";
-import { formatPercent, formatQty, formatVnd } from "@/lib/domain/money";
+import { formatCostPer, formatPercent, formatQty, formatVnd } from "@/lib/domain/money";
 import { computeProduction } from "@/lib/domain/production";
 import { createProductionAction } from "@/server/actions/inventory";
 
@@ -72,6 +72,11 @@ export default function ProductionPage() {
         initialValues={{ kind: "clean", date: todayVN(), inputs: [{}], outputs: [{}] }}
         onValuesChange={(changed: Partial<Values>) => {
           if (changed.kind) form.setFieldsValue({ inputs: [{}], outputs: [{}] });
+          // Chọn thành phẩm tính theo cái thì điền sẵn số gram yến mỗi cái đã lưu ở sản phẩm.
+          changed.outputs?.forEach((line, index) => {
+            const product = line?.productId ? products.byId.get(line.productId) : undefined;
+            if (product?.gramPerUnit) form.setFieldValue(["outputs", index, "gramPerUnit"], product.gramPerUnit);
+          });
         }}
         onFinish={async (values) => {
           setSaving(true);
@@ -128,7 +133,7 @@ export default function ProductionPage() {
               )}
               {preview.outs.map((o, i) => (
                 <Descriptions.Item key={o.product.id} label={o.product.name}>
-                  {formatVnd(preview.result.unitCosts[i])}/{o.unit === "g" ? "g" : "cái"} · tổng {formatVnd(preview.result.outputCosts[i])}
+                  {formatCostPer(preview.result.outputCosts[i], o.qty, o.unit)} · tổng {formatVnd(preview.result.outputCosts[i])}
                 </Descriptions.Item>
               ))}
             </Descriptions>
@@ -175,7 +180,7 @@ function LineList({
               return (
                 <div key={field.key} className="rounded-xl border border-line p-3">
                   <div className="flex gap-2">
-                    <Form.Item className="flex-1" name={[field.name, "productId"]} rules={[{ required: true, message: "Chọn sản phẩm" }]}>
+                    <Form.Item className="min-w-0 flex-1" name={[field.name, "productId"]} rules={[{ required: true, message: "Chọn sản phẩm" }]}>
                       <ProductSelect products={products.data} kinds={kinds} />
                     </Form.Item>
                     {fields.length > 1 && <Button type="text" icon={<DeleteOutlined />} onClick={() => remove(field.name)} />}

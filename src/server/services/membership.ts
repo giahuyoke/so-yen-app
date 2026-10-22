@@ -1,6 +1,6 @@
 import { FieldValue, type Firestore } from "firebase-admin/firestore";
 import { AppError } from "@/lib/domain/errors";
-import { inviteInput, removeMemberInput, shopNameInput } from "@/lib/domain/schemas";
+import { inviteInput, removeMemberInput, shopNameInput, taxConfigInput } from "@/lib/domain/schemas";
 import type { Actor } from "@/server/actor";
 
 export interface MyShop {
@@ -111,4 +111,10 @@ export async function removeMember(db: Firestore, shopId: string, input: unknown
     tx.delete(shop.collection("members").doc(uid));
   });
   return { uid };
+}
+
+export async function updateTaxConfig(db: Firestore, shopId: string, input: unknown) {
+  const taxConfig = taxConfigInput.parse(input);
+  await shopRef(db, shopId).update({ taxConfig });
+  return taxConfig;
 }

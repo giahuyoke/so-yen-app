@@ -2,15 +2,19 @@
 
 import {
   AppstoreOutlined,
+  AuditOutlined,
+  BarChartOutlined,
   FileTextOutlined,
   HomeOutlined,
   InboxOutlined,
   LogoutOutlined,
   PlusOutlined,
+  SettingOutlined,
   ShopOutlined,
   ShoppingOutlined,
   TeamOutlined,
   UserOutlined,
+  WalletOutlined,
 } from "@ant-design/icons";
 import { Button, Drawer } from "antd";
 import Link from "next/link";
@@ -30,10 +34,15 @@ const HOME: NavItem = { href: "/", label: "Tổng quan", icon: <HomeOutlined /> 
 const SALES: NavItem = { href: "/ban-hang", label: "Đơn bán", icon: <ShoppingOutlined /> };
 const STOCK: NavItem = { href: "/kho", label: "Kho", icon: <InboxOutlined /> };
 
+// Xếp theo tần suất dùng: việc hằng ngày trước, cài đặt sau cùng.
 const MORE: NavItem[] = [
+  { href: "/chi-phi", label: "Chi phí", icon: <WalletOutlined /> },
+  { href: "/bao-cao", label: "Báo cáo", icon: <BarChartOutlined /> },
   { href: "/khach-hang", label: "Khách hàng", icon: <UserOutlined /> },
+  { href: "/thue", label: "Thuế", icon: <AuditOutlined /> },
   { href: "/kho/lich-su", label: "Chứng từ kho", icon: <FileTextOutlined /> },
   { href: "/nha-cung-cap", label: "Nhà cung cấp", icon: <ShopOutlined /> },
+  { href: "/cai-dat", label: "Cài đặt", icon: <SettingOutlined /> },
   { href: "/thanh-vien", label: "Thành viên", icon: <TeamOutlined /> },
 ];
 

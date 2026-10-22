@@ -54,3 +54,32 @@ export function parseMoney(raw: string): number | null {
 
   return null;
 }
+
+/** Sản phẩm tính theo gram được báo giá theo 100g, như cách dân buôn yến hay nói. */
+export const GRAMS_PER_PRICE_UNIT = 100;
+
+export function priceUnitLabel(unit: Unit): string {
+  return unit === "g" ? "100g" : "cái";
+}
+
+/** Giá lưu theo 1 đơn vị (₫/g hoặc ₫/cái) → giá hiển thị (₫/100g hoặc ₫/cái). */
+export function toDisplayPrice(price: number, unit: Unit): number {
+  return unit === "g" ? price * GRAMS_PER_PRICE_UNIT : price;
+}
+
+/** Giá nhập (₫/100g hoặc ₫/cái) → giá lưu; null khi ₫/100g không chia hết cho 100. */
+export function fromDisplayPrice(display: number, unit: Unit): number | null {
+  if (unit !== "g") return display;
+  return display % GRAMS_PER_PRICE_UNIT === 0 ? display / GRAMS_PER_PRICE_UNIT : null;
+}
+
+/** "4.500.000 ₫/100g" hoặc "300.000 ₫/cái". */
+export function formatUnitPrice(price: number, unit: Unit): string {
+  return `${formatVnd(toDisplayPrice(price, unit))}/${priceUnitLabel(unit)}`;
+}
+
+/** Giá vốn trung bình của `totalCost` cho `qty` đơn vị, theo đơn vị hiển thị. */
+export function formatCostPer(totalCost: number, qty: number, unit: Unit): string {
+  const perUnit = qty > 0 ? (totalCost * (unit === "g" ? GRAMS_PER_PRICE_UNIT : 1)) / qty : 0;
+  return `${formatVnd(Math.round(perUnit))}/${priceUnitLabel(unit)}`;
+}

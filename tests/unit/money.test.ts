@@ -1,5 +1,15 @@
 import { describe, expect, test } from "vitest";
-import { formatNumber, formatPercent, formatQty, formatVnd, parseMoney } from "@/lib/domain/money";
+import {
+  formatCostPer,
+  formatNumber,
+  formatPercent,
+  formatQty,
+  formatUnitPrice,
+  formatVnd,
+  fromDisplayPrice,
+  parseMoney,
+  toDisplayPrice,
+} from "@/lib/domain/money";
 
 describe("formatVnd", () => {
   test("dùng dấu chấm phân cách hàng nghìn", () => {
@@ -46,5 +56,21 @@ describe("formatPercent", () => {
     expect(formatPercent(0.5)).toBe("50,0%");
     expect(formatPercent(0.397_2)).toBe("39,7%");
     expect(formatPercent(0)).toBe("0,0%");
+  });
+});
+
+describe("giá theo 100g", () => {
+  test("đổi qua lại giữa giá lưu ₫/g và giá hiển thị ₫/100g", () => {
+    expect(toDisplayPrice(45_000, "g")).toBe(4_500_000);
+    expect(toDisplayPrice(300_000, "piece")).toBe(300_000);
+    expect(fromDisplayPrice(4_550_000, "g")).toBe(45_500);
+    expect(fromDisplayPrice(4_555_550, "g")).toBeNull();
+    expect(fromDisplayPrice(75_000, "piece")).toBe(75_000);
+  });
+
+  test("định dạng", () => {
+    expect(formatUnitPrice(45_000, "g")).toBe("4.500.000 ₫/100g");
+    expect(formatCostPer(2_500_000, 1_000, "g")).toBe("250.000 ₫/100g");
+    expect(formatCostPer(514_000, 2, "piece")).toBe("257.000 ₫/cái");
   });
 });
