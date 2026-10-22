@@ -33,6 +33,15 @@ npm run lint
 - Client chỉ **đọc** Firestore realtime. Ghi kho và chứng từ chỉ đi qua server.
   Riêng nhà cung cấp do client ghi trực tiếp, có `firestore.rules` kiểm tra.
 
+## Chạy trên máy với Firebase thật (project `so-yen-app`)
+
+1. Tạo `.env.production.local` với cấu hình Web App (xem `npx -y firebase-tools@latest apps:sdkconfig WEB --project so-yen-app`)
+   và đặt `NEXT_PUBLIC_USE_EMULATORS=false`, `FIRESTORE_EMULATOR_HOST=`, `FIREBASE_AUTH_EMULATOR_HOST=`.
+   Hai biến rỗng là bắt buộc: Next.js vẫn nạp `.env.local` ở production, nếu không ghi đè thì
+   server sẽ kết nối vào Emulator.
+2. Tải service account key về `~/Downloads` rồi chạy `python3 scripts/install-service-account.py`.
+3. `npm run build && npm start`, mở http://localhost:3000.
+
 ## Đưa lên production
 
 1. Tạo Firebase project, bật Authentication → Google, tạo Firestore (Native mode).
