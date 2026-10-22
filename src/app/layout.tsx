@@ -1,0 +1,39 @@
+import type { Metadata, Viewport } from "next";
+import { Be_Vietnam_Pro } from "next/font/google";
+import { AntdRegistry } from "@ant-design/nextjs-registry";
+import { Providers } from "@/components/providers";
+import "./globals.css";
+
+const font = Be_Vietnam_Pro({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-vietnam",
+  display: "swap",
+});
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#faf8f1",
+};
+
+export const metadata: Metadata = {
+  title: "Sổ Yến",
+  description: "Sổ sách kho, bán hàng và thuế cho hộ kinh doanh yến sào.",
+};
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="vi" className={`${font.variable} h-full antialiased`}>
+      <head>
+        <style>{"@layer theme, base, antd, components, utilities;"}</style>
+      </head>
+      <body className="min-h-full font-sans">
+        <AntdRegistry>
+          <Providers>{children}</Providers>
+        </AntdRegistry>
+      </body>
+    </html>
+  );
+}
