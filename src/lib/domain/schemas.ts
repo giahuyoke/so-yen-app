@@ -1,0 +1,88 @@
+import { z } from "zod";
+import { PRODUCT_KINDS, PRODUCTION_KINDS, RECEIPT_KINDS, TAX_GROUPS, UNITS } from "@/lib/domain/models";
+
+const id = z.string().regex(/^[A-Za-z0-9_-]{10,40}$/, "Mã không hợp lệ");
+const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày không hợp lệ");
+const qty = z
+  .number("Nhập số lượng")
+  .int("Số lượng phải là số nguyên")
+  .positive("Số lượng phải lớn hơn 0")
+  .max(100_000_000, "Số lượng quá lớn");
+const money = z
+  .number("Nhập số tiền")
+  .int("Số tiền phải là số nguyên")
+  .min(0, "Số tiền không được âm")
+  .max(100_000_000_000, "Số tiền quá lớn");
+const note = z.string().trim().max(500, "Ghi chú tối đa 500 ký tự").default("");
+
+export const productInput = z.object({
+  id,
+  name: z.string().trim().min(1, "Nhập tên sản phẩm").max(100, "Tên tối đa 100 ký tự"),
+  kind: z.enum(PRODUCT_KINDS),
+  unit: z.enum(UNITS),
+  suggestedPrice: money,
+  lowStockThreshold: z.number().int().min(0, "Không được âm"),
+  taxGroup: z.enum(TAX_GROUPS),
+});
+
+export const productUpdateInput = productInput
+  .pick({ id: true, name: true, suggestedPrice: true, lowStockThreshold: true, taxGroup: true })
+  .extend({ archived: z.boolean() });
+
+export const receiptInput = z.object({
+  id,
+  kind: z.enum(RECEIPT_KINDS),
+  date,
+  supplierId: id.nullable().default(null),
+  note,
+  lines: z.array(z.object({ productId: id, qty, totalCost: money })).min(1, "Thêm ít nhất một dòng"),
+});
+
+export const productionInput = z.object({
+  id,
+  kind: z.enum(PRODUCTION_KINDS),
+  date,
+  note,
+  inputs: z.array(z.object({ productId: id, qty })).min(1, "Thêm ít nhất một nguyên liệu"),
+  outputs: z
+    .array(
+      z.object({
+        productId: id,
+        qty,
+        gramPerUnit: z.number().int("Phải là số nguyên").positive("Phải lớn hơn 0").max(100_000),
+      }),
+    )
+    .min(1, "Thêm ít nhất một thành phẩm"),
+});
+
+export const adjustmentInput = z.object({
+  id,
+  date,
+  reason: z.string().trim().min(1, "Nhập lý do điều chỉnh").max(500),
+  lines: z
+    .array(
+      z.object({
+        productId: id,
+        qtyDelta: z
+          .number("Nhập số lượng")
+          .int("Số lượng phải là số nguyên")
+          .refine((n) => n !== 0, "Số lượng điều chỉnh phải khác 0"),
+      }),
+    )
+    .min(1, "Thêm ít nhất một dòng"),
+});
+
+export const voidInput = z.object({
+  id,
+  reason: z.string().trim().min(1, "Nhập lý do hủy").max(500),
+});
+
+export const shopNameInput = z.object({
+  name: z.string().trim().min(1, "Nhập tên cửa hàng").max(100),
+});
+
+export const inviteInput = z.object({
+  email: z.string().trim().toLowerCase().pipe(z.email("Email không hợp lệ")),
+});
+
+export const removeMemberInput = z.object({ uid: z.string().min(1).max(128) });

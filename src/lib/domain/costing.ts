@@ -9,7 +9,7 @@ export function allocateCost(totalCost: number, weights: number[]): number[] {
     throw new Error("Trọng số phải là số nguyên dương");
   }
   const total = BigInt(totalCost);
-  const sum = weights.reduce((acc, w) => acc + BigInt(w), 0n);
+  const sum = weights.reduce((acc, w) => acc + BigInt(w), BigInt(0));
   const shares = weights.map((w) => Number((total * BigInt(w)) / sum));
   const allocated = shares.reduce((acc, s) => acc + s, 0);
   shares[shares.length - 1] += totalCost - allocated;
