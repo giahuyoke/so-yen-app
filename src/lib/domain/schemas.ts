@@ -1,5 +1,13 @@
 import { z } from "zod";
-import { PRODUCT_KINDS, PRODUCTION_KINDS, RECEIPT_KINDS, TAX_GROUPS, UNITS } from "@/lib/domain/models";
+import {
+  PAYMENT_METHODS,
+  PRODUCT_KINDS,
+  PRODUCTION_KINDS,
+  RECEIPT_KINDS,
+  SALE_CHANNELS,
+  TAX_GROUPS,
+  UNITS,
+} from "@/lib/domain/models";
 
 const id = z.string().regex(/^[A-Za-z0-9_-]{10,40}$/, "Mã không hợp lệ");
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày không hợp lệ");
@@ -86,3 +94,27 @@ export const inviteInput = z.object({
 });
 
 export const removeMemberInput = z.object({ uid: z.string().min(1).max(128) });
+
+export const saleInput = z.object({
+  id,
+  date,
+  customerId: id.nullable().default(null),
+  channel: z.enum(SALE_CHANNELS),
+  note,
+  lines: z.array(z.object({ productId: id, qty, price: money })).min(1, "Thêm ít nhất một sản phẩm"),
+  discount: money.default(0),
+  paid: money,
+});
+
+export const paymentInput = z.object({
+  id,
+  customerId: id,
+  date,
+  amount: z
+    .number("Nhập số tiền")
+    .int("Số tiền phải là số nguyên")
+    .positive("Số tiền phải lớn hơn 0")
+    .max(100_000_000_000, "Số tiền quá lớn"),
+  method: z.enum(PAYMENT_METHODS),
+  note,
+});

@@ -1,5 +1,13 @@
 import { describe, expect, test } from "vitest";
-import { adjustmentInput, inviteInput, productInput, productionInput, receiptInput } from "@/lib/domain/schemas";
+import {
+  adjustmentInput,
+  inviteInput,
+  paymentInput,
+  productInput,
+  productionInput,
+  receiptInput,
+  saleInput,
+} from "@/lib/domain/schemas";
 
 const ID = "abcdef0123456789";
 
@@ -62,5 +70,31 @@ describe("adjustmentInput", () => {
 describe("inviteInput", () => {
   test("chuẩn hóa email về chữ thường", () => {
     expect(inviteInput.parse({ email: " Lan@Gmail.com " }).email).toBe("lan@gmail.com");
+  });
+});
+
+describe("saleInput", () => {
+  const line = { productId: ID, qty: 100, price: 45_000 };
+
+  test("mặc định khách lẻ, không giảm giá, ghi chú trống", () => {
+    const s = saleInput.parse({ id: ID, date: "2026-10-22", channel: "zalo", lines: [line], paid: 0 });
+    expect(s).toMatchObject({ customerId: null, discount: 0, note: "" });
+  });
+
+  test("từ chối kênh lạ, thiếu dòng, giá âm", () => {
+    expect(saleInput.safeParse({ id: ID, date: "2026-10-22", channel: "tiktok", lines: [line], paid: 0 }).success).toBe(false);
+    expect(saleInput.safeParse({ id: ID, date: "2026-10-22", channel: "zalo", lines: [], paid: 0 }).success).toBe(false);
+    expect(
+      saleInput.safeParse({ id: ID, date: "2026-10-22", channel: "zalo", lines: [{ ...line, price: -1 }], paid: 0 }).success,
+    ).toBe(false);
+  });
+});
+
+describe("paymentInput", () => {
+  test("số tiền phải dương, phương thức hợp lệ", () => {
+    const base = { id: ID, customerId: ID, date: "2026-10-22", method: "cash" };
+    expect(paymentInput.safeParse({ ...base, amount: 0 }).success).toBe(false);
+    expect(paymentInput.safeParse({ ...base, amount: 500_000, method: "card" }).success).toBe(false);
+    expect(paymentInput.parse({ ...base, amount: 500_000 }).note).toBe("");
   });
 });

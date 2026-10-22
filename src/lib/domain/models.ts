@@ -156,3 +156,86 @@ export const PRODUCTION_KIND_LABEL: Record<ProductionKind, string> = {
   steam: "Chưng",
   pack: "Đóng hộp / combo",
 };
+
+export const SALE_CHANNELS = ["zalo", "facebook", "shopee", "store", "other"] as const;
+export type SaleChannel = (typeof SALE_CHANNELS)[number];
+
+export const CUSTOMER_TYPES = ["retail", "agent"] as const;
+export type CustomerType = (typeof CUSTOMER_TYPES)[number];
+
+export const PAYMENT_METHODS = ["cash", "transfer"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+/** Loại sản phẩm được bán; vật tư chỉ dùng để chế biến. */
+export const SELLABLE_KINDS: ProductKind[] = ["raw", "clean", "steamed", "combo"];
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone?: string;
+  type: CustomerType;
+  note?: string;
+  /** Các trường dưới đây chỉ server ghi. */
+  debtBalance?: number;
+  totalSpent?: number;
+  lastPurchaseAt?: string;
+}
+
+export interface SaleLine {
+  productId: string;
+  qty: number;
+  price: number;
+  /** Thành tiền sau khi chia giảm giá. */
+  revenue: number;
+  totalCost: number;
+  unitCost: number;
+  taxGroup: TaxGroup;
+}
+
+export interface SaleDoc extends DocBase {
+  code: string;
+  customerId: string | null;
+  channel: SaleChannel;
+  note: string;
+  lines: SaleLine[];
+  subtotal: number;
+  discount: number;
+  total: number;
+  paid: number;
+  debt: number;
+}
+
+export interface PaymentDoc extends DocBase {
+  customerId: string;
+  amount: number;
+  method: PaymentMethod;
+  note: string;
+}
+
+export interface MonthStats {
+  id: string;
+  revenue?: number;
+  cogs?: number;
+  saleCount?: number;
+  byChannel?: Partial<Record<SaleChannel, { revenue: number; cogs: number; count: number }>>;
+  byProduct?: Record<string, { qty: number; revenue: number; cogs: number }>;
+  byTaxGroup?: Partial<Record<TaxGroup, number>>;
+}
+
+export const SALE_CHANNEL_LABEL: Record<SaleChannel, string> = {
+  zalo: "Zalo",
+  facebook: "Facebook",
+  shopee: "Shopee",
+  store: "Tại cửa hàng",
+  other: "Khác",
+};
+
+export const CUSTOMER_TYPE_LABEL: Record<CustomerType, string> = {
+  retail: "Khách lẻ",
+  agent: "Đại lý / sỉ",
+};
+
+export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
+  cash: "Tiền mặt",
+  transfer: "Chuyển khoản",
+};
