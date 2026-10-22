@@ -5,6 +5,7 @@ import { Alert, Button, Card, Form, Input, InputNumber, Select } from "antd";
 import { useState } from "react";
 import { DateField } from "@/components/common/date-field";
 import { MoneyInput } from "@/components/common/money-input";
+import { SubmitBar } from "@/components/common/submit-bar";
 import { useRunAction } from "@/components/common/use-run-action";
 import { CustomerDrawer } from "@/components/customers/customer-drawer";
 import { ProductSelect } from "@/components/inventory/product-select";
@@ -64,7 +65,7 @@ export function SaleForm({ onNew }: { onNew: () => void }) {
     paid ?? 0,
   );
 
-  if (done) return <SaleDone code={done.code} summary={done.summary} onNew={onNew} />;
+  if (done) return <SaleDone id={id} code={done.code} summary={done.summary} onNew={onNew} />;
 
   return (
     <>
@@ -232,11 +233,22 @@ export function SaleForm({ onNew }: { onNew: () => void }) {
               title={`Còn nợ ${formatVnd(totals.debt)}${customerId ? "" : " — chọn khách hàng để ghi nợ"}`}
             />
           )}
-          <Form.Item name="note" label="Ghi chú" className="mt-4!">
+          <Form.Item name="note" label="Ghi chú" className="mt-4! mb-0!">
             <Input.TextArea rows={2} maxLength={500} />
           </Form.Item>
-          <Button type="primary" htmlType="submit" size="large" block loading={saving}>Lưu đơn</Button>
         </Card>
+
+        <SubmitBar
+          summary={
+            <>
+              <div className="text-muted">Tổng cộng</div>
+              <div className="text-base font-semibold whitespace-nowrap">{formatVnd(totals.total)}</div>
+              {paid != null && totals.debt > 0 && <div className="text-xs whitespace-nowrap text-debt">Nợ {formatVnd(totals.debt)}</div>}
+            </>
+          }
+        >
+          <Button type="primary" htmlType="submit" size="large" loading={saving}>Lưu đơn</Button>
+        </SubmitBar>
       </Form>
 
       <CustomerDrawer

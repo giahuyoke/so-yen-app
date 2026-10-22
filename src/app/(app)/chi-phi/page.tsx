@@ -4,6 +4,7 @@ import { PlusOutlined } from "@ant-design/icons";
 import { Button, Card, Empty, Form, Input, Modal, Select, Tag } from "antd";
 import { useState } from "react";
 import { DateField } from "@/components/common/date-field";
+import { VoidMenu } from "@/components/common/row-menu";
 import { ItemList, ListItem, ListItemMeta } from "@/components/common/item-list";
 import { DateRangeFilter, LoadMore, thisMonthRange, type DateRange } from "@/components/common/list-filters";
 import { MoneyInput } from "@/components/common/money-input";
@@ -94,7 +95,7 @@ export default function ExpensesPage() {
               <ListItem
                 actions={
                   e.status === "active"
-                    ? [<Button key="void" danger size="small" onClick={() => setVoiding(e)}>Hủy</Button>]
+                    ? [<VoidMenu key="void" label="Hủy khoản chi" onVoid={() => setVoiding(e)} />]
                     : [<Tag key="voided">Đã hủy</Tag>]
                 }
               >

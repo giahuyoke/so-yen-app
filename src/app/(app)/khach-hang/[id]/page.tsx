@@ -1,36 +1,24 @@
 "use client";
 
-import { EditOutlined } from "@ant-design/icons";
-import { Button, Card, Empty, Form, Input, Modal, Result, Segmented, Select, Tabs, Tag } from "antd";
-import { ItemList, ListItem, ListItemMeta } from "@/components/common/item-list";
+import { EditOutlined, RightOutlined } from "@ant-design/icons";
+import { Button, Card, Empty, Result, Tabs, Tag } from "antd";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { DateField } from "@/components/common/date-field";
-import { MoneyInput } from "@/components/common/money-input";
+import { ItemList, ListItem, ListItemMeta } from "@/components/common/item-list";
+import { VoidMenu } from "@/components/common/row-menu";
 import { useRunAction } from "@/components/common/use-run-action";
 import { VoidModal } from "@/components/common/void-modal";
-import { DebtTag } from "@/components/sales/debt-tag";
 import { CustomerDrawer } from "@/components/customers/customer-drawer";
+import { PaymentModal, type PaymentRequest } from "@/components/customers/payment-modal";
+import { DebtTag } from "@/components/sales/debt-tag";
 import { useShop } from "@/components/shop/shop-provider";
 import { useCustomerPayments, useCustomers, useCustomerSales } from "@/hooks/use-shop-data";
-import { formatDate, todayVN } from "@/lib/domain/dates";
-import { newId } from "@/lib/domain/ids";
-import { CUSTOMER_TYPE_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_METHODS, type PaymentDoc, type PaymentMethod } from "@/lib/domain/models";
+import { formatDate } from "@/lib/domain/dates";
 import { remainingDebtBySale } from "@/lib/domain/debt";
+import { CUSTOMER_TYPE_LABEL, PAYMENT_METHOD_LABEL, type PaymentDoc } from "@/lib/domain/models";
 import { formatVnd } from "@/lib/domain/money";
-import { createPaymentAction, voidPaymentAction } from "@/server/actions/sales";
-
-/** Giá trị "Thu chung" của ô chọn đơn (Select của antd không nhận null). */
-const GENERAL = "";
-
-interface PaymentValues {
-  saleId: string;
-  amount: number | null;
-  method: PaymentMethod;
-  date: string;
-  note?: string;
-}
+import { voidPaymentAction } from "@/server/actions/sales";
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,11 +28,8 @@ export default function CustomerDetailPage() {
   const sales = useCustomerSales(id);
   const payments = useCustomerPayments(id);
   const [editOpen, setEditOpen] = useState(false);
-  const [paying, setPaying] = useState<string | null>(null);
+  const [paying, setPaying] = useState<PaymentRequest | null>(null);
   const [voiding, setVoiding] = useState<PaymentDoc | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [form] = Form.useForm<PaymentValues>();
-  const paySaleId = Form.useWatch("saleId", form) || null;
 
   const customer = customers.byId.get(id);
   if (customers.loading) return <Card loading />;
@@ -53,21 +38,7 @@ export default function CustomerDetailPage() {
   }
   const debt = customer.debtBalance ?? 0;
   const remaining = remainingDebtBySale(sales.data, debt);
-  const payMax = paySaleId ? (remaining.get(paySaleId) ?? 0) : debt;
   const saleCode = new Map(sales.data.map((s) => [s.id, s.code]));
-  // Đơn còn nợ, cũ nhất trước: thứ tự mà phiếu thu chung sẽ trừ vào.
-  const owing = sales.data.filter((s) => remaining.has(s.id)).reverse();
-
-  const openPayment = (saleId: string | null) => {
-    form.setFieldsValue({
-      saleId: saleId ?? GENERAL,
-      amount: saleId ? (remaining.get(saleId) ?? 0) : debt,
-      method: "transfer",
-      date: todayVN(),
-      note: "",
-    });
-    setPaying(newId());
-  };
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -87,12 +58,7 @@ export default function CustomerDetailPage() {
         <div className="text-3xl font-semibold">{formatVnd(debt)}</div>
         <div className="mt-1 text-sm text-brand-tint">Đã mua {formatVnd(customer.totalSpent ?? 0)}</div>
         {debt > 0 && (
-          <Button
-            className="mt-4 border-none! bg-white! text-brand!"
-            size="large"
-            block
-            onClick={() => openPayment(null)}
-          >
+          <Button className="mt-4 border-none! bg-white! text-brand!" size="large" block onClick={() => setPaying({ saleId: null })}>
             Thu nợ
           </Button>
         )}
@@ -112,18 +78,31 @@ export default function CustomerDetailPage() {
                     dataSource={sales.data}
                     renderItem={(s) => (
                       <ListItem
-                        extra={s.status === "voided" ? <Tag>Đã hủy</Tag> : undefined}
-                        actions={remaining.has(s.id) ? [<Button key="pay" size="small" onClick={() => openPayment(s.id)}>Thu</Button>] : undefined}
+                        actions={[
+                          ...(remaining.has(s.id)
+                            ? [<Button key="pay" size="small" onClick={() => setPaying({ saleId: s.id })}>Thu</Button>]
+                            : []),
+                          <Link key="open" href={`/ban-hang/${s.id}`} aria-label={`Xem đơn ${s.code}`} className="px-1 text-muted!">
+                            <RightOutlined />
+                          </Link>,
+                        ]}
                       >
-                        <ListItemMeta
-                          title={<span className={s.status === "voided" ? "line-through opacity-60" : ""}>{s.code}</span>}
-                          description={
-                            <>
-                              {formatDate(s.date)} · {formatVnd(s.total)}
-                              <DebtTag sale={s} remaining={remaining.get(s.id) ?? 0} loading={sales.loading} />
-                            </>
-                          }
-                        />
+                        <Link href={`/ban-hang/${s.id}`} className="block text-ink!">
+                          <ListItemMeta
+                            title={
+                              <span className={s.status === "voided" ? "line-through opacity-60" : ""}>
+                                {s.code}
+                                {s.status === "voided" && <Tag className="ml-2!">Đã hủy</Tag>}
+                              </span>
+                            }
+                            description={
+                              <>
+                                <div>{formatDate(s.date)} · {formatVnd(s.total)}</div>
+                                <DebtTag className="mt-1! mx-0!" sale={s} remaining={remaining.get(s.id) ?? 0} loading={sales.loading} />
+                              </>
+                            }
+                          />
+                        </Link>
                       </ListItem>
                     )}
                   />
@@ -145,7 +124,7 @@ export default function CustomerDetailPage() {
                       <ListItem
                         actions={
                           p.status === "active"
-                            ? [<Button key="void" danger size="small" onClick={() => setVoiding(p)}>Hủy</Button>]
+                            ? [<VoidMenu key="void" label="Hủy phiếu thu" onVoid={() => setVoiding(p)} />]
                             : [<Tag key="voided">Đã hủy</Tag>]
                         }
                       >
@@ -155,7 +134,9 @@ export default function CustomerDetailPage() {
                             formatDate(p.date),
                             PAYMENT_METHOD_LABEL[p.method],
                             p.saleId ? `cho đơn ${saleCode.get(p.saleId) ?? p.saleId}` : "thu chung",
-                            p.note, p.voidReason && `Lý do hủy: ${p.voidReason}`]
+                            p.note,
+                            p.voidReason && `Lý do hủy: ${p.voidReason}`,
+                          ]
                             .filter(Boolean)
                             .join(" · ")}
                         />
@@ -169,68 +150,7 @@ export default function CustomerDetailPage() {
         ]}
       />
 
-      <Modal
-        open={!!paying}
-        title={`Thu nợ ${customer.name}`}
-        okText="Lưu phiếu thu"
-        cancelText="Đóng"
-        okButtonProps={{ loading: saving }}
-        forceRender
-        onCancel={() => setPaying(null)}
-        onOk={() => form.submit()}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={async (values) => {
-            if (!paying) return;
-            setSaving(true);
-            const ok = await run(
-              createPaymentAction(shop.id, { id: paying, customerId: customer.id, ...values, saleId: values.saleId || null, note: values.note ?? "" }),
-              { success: "Đã ghi phiếu thu", form },
-            );
-            setSaving(false);
-            if (ok) setPaying(null);
-          }}
-        >
-          <Form.Item
-            name="saleId"
-            label="Trả cho đơn"
-            extra={paySaleId ? undefined : "Thu chung được trừ vào đơn nợ cũ nhất trước."}
-          >
-            <Select<string>
-              options={[
-                { value: GENERAL, label: "Thu chung" },
-                ...owing.map((s) => ({ value: s.id, label: `${s.code} · ${formatDate(s.date)} · còn nợ ${formatVnd(remaining.get(s.id) ?? 0)}` })),
-              ]}
-              onChange={(saleId) => form.setFieldValue("amount", saleId ? (remaining.get(saleId) ?? 0) : debt)}
-            />
-          </Form.Item>
-          <Form.Item
-            name="amount"
-            label="Số tiền"
-            rules={[
-              { required: true, type: "number", min: 1, message: "Nhập số tiền" },
-              {
-                type: "number",
-                max: payMax,
-                message: paySaleId ? `Đơn này chỉ còn nợ ${formatVnd(payMax)}` : `Khách chỉ còn nợ ${formatVnd(payMax)}`,
-              },
-            ]}
-          >
-            <MoneyInput />
-          </Form.Item>
-          <Form.Item name="method" label="Hình thức">
-            <Segmented<PaymentMethod> block options={PAYMENT_METHODS.map((m) => ({ value: m, label: PAYMENT_METHOD_LABEL[m] }))} />
-          </Form.Item>
-          <Form.Item name="date" label="Ngày">
-            <DateField />
-          </Form.Item>
-          <Form.Item name="note" label="Ghi chú">
-            <Input />
-          </Form.Item>
-        </Form>
-      </Modal>
+      <PaymentModal customer={customer} sales={sales.data} request={paying} onClose={() => setPaying(null)} />
 
       <VoidModal
         key={voiding?.id ?? "none"}

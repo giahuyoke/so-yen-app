@@ -1,7 +1,8 @@
 "use client";
 
-import { Button, Card, Empty, Select, Tabs, Tag } from "antd";
+import { Card, Empty, Select, Tabs, Tag } from "antd";
 import { useState } from "react";
+import { VoidMenu } from "@/components/common/row-menu";
 import { ItemList, ListItem, ListItemMeta } from "@/components/common/item-list";
 import { DateRangeFilter, LoadMore, thisMonthRange, type DateRange } from "@/components/common/list-filters";
 import { useRunAction } from "@/components/common/use-run-action";
@@ -105,7 +106,7 @@ export default function DocumentsPage() {
             <ListItem
               actions={
                 row.status === "active"
-                  ? [<Button key="void" danger size="small" onClick={() => setVoiding({ id: row.id, fn })}>Hủy</Button>]
+                  ? [<VoidMenu key="void" onVoid={() => setVoiding({ id: row.id, fn })} />]
                   : [<Tag key="voided">Đã hủy</Tag>]
               }
             >

@@ -78,6 +78,19 @@ export function useCustomerSales(customerId: string) {
   );
 }
 
+export function useSale(id: string) {
+  return useLiveDoc<SaleDoc>(`sale-${id}`, (db, shopId) => doc(db, "shops", shopId, "sales", id));
+}
+
+/** Phiếu thu gắn với một đơn, mới nhất trước. */
+export function useSalePayments(saleId: string) {
+  const state = useLiveQuery<PaymentDoc>(`sale-payments-${saleId}`, (db, shopId) =>
+    query(collection(db, "shops", shopId, "payments"), where("saleId", "==", saleId)),
+  );
+  const data = useMemo(() => [...state.data].sort((a, b) => b.date.localeCompare(a.date)), [state.data]);
+  return { ...state, data };
+}
+
 export function useCustomerPayments(customerId: string) {
   return useLiveQuery<PaymentDoc>(`customer-payments-${customerId}`, (db, shopId) =>
     query(collection(db, "shops", shopId, "payments"), where("customerId", "==", customerId), orderBy("createdAt", "desc"), limit(50)),

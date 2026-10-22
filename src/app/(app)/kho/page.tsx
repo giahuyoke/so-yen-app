@@ -1,7 +1,7 @@
 "use client";
 
-import { PlusOutlined } from "@ant-design/icons";
-import { Button, Card, Empty, Segmented, Tag } from "antd";
+import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { Button, Card, Empty, Input, Segmented, Select, Tag } from "antd";
 import { ItemList, ListItem, ListItemMeta } from "@/components/common/item-list";
 import Link from "next/link";
 import { useState } from "react";
@@ -11,10 +11,15 @@ import { PRODUCT_KIND_LABEL, PRODUCT_KINDS, type Product, type ProductKind } fro
 import { formatQty, formatUnitPrice } from "@/lib/domain/money";
 
 type Filter = ProductKind | "all" | "archived";
+type Sort = "name" | "low";
+
+const isLow = (p: Product) => p.lowStockThreshold > 0 && p.stockQty <= p.lowStockThreshold;
 
 export default function InventoryPage() {
   const { data: products, loading } = useProducts();
   const [filter, setFilter] = useState<Filter>("all");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<Sort>("name");
   const [editing, setEditing] = useState<Product | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerKey, setDrawerKey] = useState(0);
@@ -25,9 +30,15 @@ export default function InventoryPage() {
     setDrawerOpen(true);
   };
 
-  const shown = products.filter((p) =>
-    filter === "archived" ? p.archived : !p.archived && (filter === "all" || p.kind === filter),
+  const term = search.trim().toLowerCase();
+  const filtered = products.filter(
+    (p) =>
+      (filter === "archived" ? p.archived : !p.archived && (filter === "all" || p.kind === filter)) &&
+      (!term || p.name.toLowerCase().includes(term)),
   );
+  // Danh sách gốc đã sắp theo tên; "Sắp hết trước" chỉ đưa nhóm sắp hết lên đầu và giữ thứ tự tên trong nhóm.
+  const shown = sort === "low" ? [...filtered.filter(isLow), ...filtered.filter((p) => !isLow(p))] : filtered;
+  const lowCount = filtered.filter(isLow).length;
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -47,6 +58,25 @@ export default function InventoryPage() {
         <Link href="/kho/dieu-chinh"><Button block>Điều chỉnh</Button></Link>
       </div>
 
+      <div className="flex gap-2">
+        <Input
+          allowClear
+          prefix={<SearchOutlined className="text-muted" />}
+          placeholder="Tìm sản phẩm"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <Select<Sort>
+          className="w-40 shrink-0"
+          value={sort}
+          onChange={setSort}
+          options={[
+            { value: "name", label: "Theo tên" },
+            { value: "low", label: `Sắp hết trước${lowCount ? ` (${lowCount})` : ""}` },
+          ]}
+        />
+      </div>
+
       <div className="overflow-x-auto [scrollbar-width:none]">
         <Segmented<Filter>
           value={filter}
@@ -61,12 +91,12 @@ export default function InventoryPage() {
 
       <Card loading={loading}>
         {shown.length === 0 ? (
-          <Empty description="Chưa có sản phẩm. Bấm “+ Sản phẩm” để tạo." />
+          <Empty description={term ? "Không có sản phẩm nào khớp" : "Chưa có sản phẩm. Bấm “+ Sản phẩm” để tạo."} />
         ) : (
           <ItemList
             dataSource={shown}
             renderItem={(p) => {
-              const low = p.lowStockThreshold > 0 && p.stockQty <= p.lowStockThreshold;
+              const low = isLow(p);
               return (
                 <ListItem
                   className="cursor-pointer"

@@ -10,11 +10,11 @@ import { PRODUCT_KIND_LABEL } from "@/lib/domain/models";
 import { formatPercent, formatQty, formatVnd } from "@/lib/domain/money";
 import { forecastYearRevenue } from "@/lib/domain/tax";
 
-function Tile({ label, value, hint, tone = "ink" }: { label: string; value: string; hint?: string; tone?: "ink" | "debt" }) {
+function Tile({ label, value, hint, tone = "ink" }: { label: string; value: string; hint?: React.ReactNode; tone?: "ink" | "debt" }) {
   return (
     <div className="rounded-2xl border border-line bg-white p-4">
       <div className="text-sm text-muted">{label}</div>
-      <div className={`text-lg font-semibold ${tone === "debt" ? "text-debt" : "text-ink"}`}>{value}</div>
+      <div className={`text-lg font-semibold whitespace-nowrap ${tone === "debt" ? "text-debt" : "text-ink"}`}>{value}</div>
       {hint && <div className="text-xs text-muted">{hint}</div>}
     </div>
   );
@@ -81,7 +81,12 @@ export default function DashboardPage() {
         <Tile
           label="Hôm nay"
           value={formatVnd(todayRevenue)}
-          hint={`${active.length} đơn · lãi ${formatVnd(todayRevenue - todayCogs)}`}
+          hint={
+            <>
+              <span className="whitespace-nowrap">{active.length} đơn</span> ·{" "}
+              <span className="whitespace-nowrap">lãi {formatVnd(todayRevenue - todayCogs)}</span>
+            </>
+          }
         />
         <Tile label="Công nợ" value={formatVnd(totalDebt)} hint={`${customers.data.filter((c) => (c.debtBalance ?? 0) > 0).length} khách đang nợ`} tone="debt" />
       </div>

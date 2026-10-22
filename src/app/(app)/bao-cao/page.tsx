@@ -1,7 +1,7 @@
 "use client";
 
 import { DownloadOutlined, RightOutlined } from "@ant-design/icons";
-import { Button, Card, Empty, Tabs } from "antd";
+import { Button, Card, Empty } from "antd";
 import Link from "next/link";
 import { useState } from "react";
 import { ItemList, ListItem, ListItemMeta } from "@/components/common/item-list";
@@ -25,6 +25,15 @@ import {
 import { formatPercent, formatQty, formatVnd } from "@/lib/domain/money";
 import { lossBySource, periodRange, sumStats, type LossSource, type Period } from "@/lib/domain/reports";
 
+const TABS = [
+  { key: "profit", label: "Lãi lỗ" },
+  { key: "channel", label: "Theo kênh" },
+  { key: "product", label: "Theo sản phẩm" },
+  { key: "loss", label: "Hao hụt" },
+  { key: "debt", label: "Công nợ" },
+] as const;
+type TabKey = (typeof TABS)[number]["key"];
+
 const margin = (profit: number, revenue: number) => (revenue > 0 ? formatPercent(profit / revenue) : undefined);
 
 export default function ReportsPage() {
@@ -39,6 +48,7 @@ export default function ReportsPage() {
   const productions = useProductionsInRange(range.from, range.to);
   const receipts = useReceiptsUpTo(range.to);
   const debtors = useDebtors();
+  const [tab, setTab] = useState<TabKey>("profit");
 
   const exportUrl = `/api/export?${new URLSearchParams({ shopId: shop.id, from: range.from, to: range.to })}`;
 
@@ -220,15 +230,26 @@ export default function ReportsPage() {
         </div>
       </section>
 
-      <Tabs
-        items={[
-          { key: "profit", label: "Lãi lỗ", children: profitTab },
-          { key: "channel", label: "Theo kênh", children: channelTab },
-          { key: "product", label: "Theo sản phẩm", children: productTab },
-          { key: "loss", label: "Hao hụt", children: lossTab },
-          { key: "debt", label: "Công nợ", children: debtTab },
-        ]}
-      />
+      {/* Chip tự xuống dòng thay cho Tabs: trên điện thoại vẫn thấy đủ các mục, không bị cắt ở mép. */}
+      <div role="tablist" className="flex flex-wrap gap-2">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.key}
+            onClick={() => setTab(t.key)}
+            className={`cursor-pointer rounded-full px-4 py-1.5 text-sm transition ${
+              tab === t.key
+                ? "bg-brand-gradient font-semibold text-white shadow-[0_6px_16px_-6px_rgba(8,80,65,0.55)]"
+                : "border border-line bg-white text-ink hover:border-brand-tint"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {{ profit: profitTab, channel: channelTab, product: productTab, loss: lossTab, debt: debtTab }[tab]}
     </div>
   );
 }

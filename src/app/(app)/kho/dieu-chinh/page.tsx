@@ -1,10 +1,11 @@
 "use client";
 
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Card, Form, Input, InputNumber } from "antd";
-import { useRouter } from "next/navigation";
+import { Button, Card, Form, Input, InputNumber, Result } from "antd";
+import Link from "next/link";
 import { useState } from "react";
 import { DateField } from "@/components/common/date-field";
+import { blurActiveField, SubmitBar } from "@/components/common/submit-bar";
 import { useRunAction } from "@/components/common/use-run-action";
 import { ProductSelect } from "@/components/inventory/product-select";
 import { useShop } from "@/components/shop/shop-provider";
@@ -22,17 +23,39 @@ interface Values {
 
 export default function AdjustmentPage() {
   const { shop } = useShop();
-  const router = useRouter();
   const run = useRunAction();
   const products = useProducts();
   const [form] = Form.useForm<Values>();
-  const [id] = useState(newId);
+  const [id, setId] = useState(newId);
+  const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <h1 className="text-2xl font-semibold">Điều chỉnh kho</h1>
+      {done && (
+        <Card>
+          <Result
+            status="success"
+            title="Đã điều chỉnh kho"
+            extra={[
+              <Link key="stock" href="/kho"><Button type="primary">Về kho</Button></Link>,
+              <Button
+                key="again"
+                onClick={() => {
+                  form.resetFields();
+                  setId(newId());
+                  setDone(false);
+                }}
+              >
+                Điều chỉnh tiếp
+              </Button>,
+            ]}
+          />
+        </Card>
+      )}
       <Form
+        className={done ? "hidden" : undefined}
         form={form}
         layout="vertical"
         initialValues={{ date: todayVN(), lines: [{}] }}
@@ -40,7 +63,10 @@ export default function AdjustmentPage() {
           setSaving(true);
           const ok = await run(createAdjustmentAction(shop.id, { id, ...values }), { success: "Đã điều chỉnh kho", form });
           setSaving(false);
-          if (ok) router.push("/kho");
+          if (ok) {
+            blurActiveField();
+            setDone(true);
+          }
         }}
       >
         <Card>
@@ -74,9 +100,11 @@ export default function AdjustmentPage() {
             </Card>
           )}
         </Form.List>
-        <Button className="mt-4!" type="primary" htmlType="submit" size="large" block loading={saving}>
-          Lưu điều chỉnh
-        </Button>
+        <SubmitBar>
+          <Button type="primary" htmlType="submit" size="large" block loading={saving}>
+            Lưu điều chỉnh
+          </Button>
+        </SubmitBar>
       </Form>
     </div>
   );

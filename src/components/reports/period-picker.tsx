@@ -2,23 +2,31 @@
 
 import type { ReactNode } from "react";
 
-import { Segmented, Select } from "antd";
+import { DatePicker, Segmented } from "antd";
+import dayjs, { type Dayjs } from "dayjs";
 import type { Period, PeriodKind } from "@/lib/domain/reports";
 
 const FIRST_YEAR = 2025;
 
-/** `today` dạng YYYY-MM-DD, dùng để giới hạn năm và chọn tháng mặc định khi đổi từ năm sang tháng/quý. */
+const FORMAT: Record<PeriodKind, string> = { month: "[Tháng] M/YYYY", quarter: "[Quý] Q/YYYY", year: "[Năm] YYYY" };
+
+/** Ngày đầu kỳ, để hiển thị trong ô chọn. */
+function periodStart(p: Period): Dayjs {
+  const month = p.kind === "month" ? p.index : p.kind === "quarter" ? p.index * 3 - 2 : 1;
+  return dayjs(`${p.year}-${String(month).padStart(2, "0")}-01`);
+}
+
+/**
+ * Chọn kỳ báo cáo: kiểu kỳ và một ô chọn tháng/quý/năm, gọn trên một hàng ở điện thoại.
+ * `today` dạng YYYY-MM-DD, dùng để chặn kỳ tương lai và chọn tháng mặc định khi đổi kiểu kỳ.
+ */
 export function PeriodPicker({ value, onChange, today }: { value: Period; onChange: (p: Period) => void; today: string }) {
   const currentYear = Number(today.slice(0, 4));
   const currentMonth = Number(today.slice(5, 7));
-  const years = Array.from({ length: currentYear - FIRST_YEAR + 1 }, (_, i) => currentYear - i);
-  const indexOptions =
-    value.kind === "month"
-      ? Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `Tháng ${i + 1}` }))
-      : Array.from({ length: 4 }, (_, i) => ({ value: i + 1, label: `Quý ${i + 1}` }));
+  const now = dayjs(today);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex items-center gap-2">
       <Segmented<PeriodKind>
         value={value.kind}
         onChange={(kind) => {
@@ -38,14 +46,19 @@ export function PeriodPicker({ value, onChange, today }: { value: Period; onChan
           { value: "year", label: "Năm" },
         ]}
       />
-      {value.kind !== "year" && (
-        <Select className="w-28" value={value.index} options={indexOptions} onChange={(index) => onChange({ ...value, index })} />
-      )}
-      <Select
-        className="w-24"
-        value={value.year}
-        options={years.map((y) => ({ value: y, label: y }))}
-        onChange={(year) => onChange({ ...value, year })}
+      <DatePicker
+        className="min-w-0 flex-1 sm:w-44! sm:flex-none"
+        picker={value.kind}
+        format={FORMAT[value.kind]}
+        allowClear={false}
+        inputReadOnly
+        value={periodStart(value)}
+        disabledDate={(d) => d.year() < FIRST_YEAR || d.isAfter(now, value.kind === "quarter" ? "month" : value.kind)}
+        onChange={(d) => {
+          if (!d) return;
+          const index = value.kind === "month" ? d.month() + 1 : value.kind === "quarter" ? Math.floor(d.month() / 3) + 1 : value.index;
+          onChange({ ...value, year: d.year(), index });
+        }}
       />
     </div>
   );

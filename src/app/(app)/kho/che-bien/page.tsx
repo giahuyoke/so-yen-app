@@ -1,10 +1,11 @@
 "use client";
 
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import { Alert, Button, Card, Descriptions, Form, Input, InputNumber, Segmented } from "antd";
-import { useRouter } from "next/navigation";
+import { Alert, Button, Card, Descriptions, Form, Input, InputNumber, Result, Segmented } from "antd";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { DateField } from "@/components/common/date-field";
+import { blurActiveField, SubmitBar } from "@/components/common/submit-bar";
 import { useRunAction } from "@/components/common/use-run-action";
 import { ProductSelect } from "@/components/inventory/product-select";
 import { useShop } from "@/components/shop/shop-provider";
@@ -36,14 +37,17 @@ interface Values {
   outputs: Line[];
 }
 
+/** Bước thường làm tiếp theo sau mỗi kiểu chế biến. */
+const NEXT_KIND: Partial<Record<ProductionKind, ProductionKind>> = { clean: "steam", steam: "pack" };
+
 export default function ProductionPage() {
   const { shop } = useShop();
-  const router = useRouter();
   const run = useRunAction();
   const products = useProducts();
   const [form] = Form.useForm<Values>();
-  const [id] = useState(newId);
+  const [id, setId] = useState(newId);
   const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState<{ kind: ProductionKind; summary: string } | null>(null);
   const kind = Form.useWatch("kind", form) ?? "clean";
   const inputs = Form.useWatch("inputs", form);
   const outputs = Form.useWatch("outputs", form);
@@ -63,10 +67,40 @@ export default function ProductionPage() {
 
   const shortages = preview?.ins.filter((i) => i.qty > i.product.stockQty) ?? [];
 
+  const restart = (next: ProductionKind) => {
+    form.resetFields();
+    form.setFieldsValue({ kind: next });
+    setId(newId());
+    setDone(null);
+  };
+
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <h1 className="text-2xl font-semibold">Chế biến</h1>
+      {done && (
+        <Card>
+          <Result
+            status="success"
+            title={`Đã lưu phiếu ${PRODUCTION_KIND_LABEL[done.kind].toLowerCase()}`}
+            subTitle={done.summary}
+            extra={[
+              ...(NEXT_KIND[done.kind]
+                ? [
+                    <Button key="next" type="primary" onClick={() => restart(NEXT_KIND[done.kind]!)}>
+                      {PRODUCTION_KIND_LABEL[NEXT_KIND[done.kind]!]} tiếp
+                    </Button>,
+                  ]
+                : []),
+              <Button key="again" type={NEXT_KIND[done.kind] ? "default" : "primary"} onClick={() => restart(done.kind)}>
+                Phiếu {PRODUCTION_KIND_LABEL[done.kind].toLowerCase()} khác
+              </Button>,
+              <Link key="stock" href="/kho"><Button>Về kho</Button></Link>,
+            ]}
+          />
+        </Card>
+      )}
       <Form
+        className={done ? "hidden" : undefined}
         form={form}
         layout="vertical"
         initialValues={{ kind: "clean", date: todayVN(), inputs: [{}], outputs: [{}] }}
@@ -95,7 +129,11 @@ export default function ProductionPage() {
             { success: "Đã lưu phiếu chế biến", form },
           );
           setSaving(false);
-          if (ok) router.push("/kho");
+          if (ok && preview) {
+            blurActiveField();
+            const loss = values.kind === "clean" ? ` · hao hụt ${formatQty(preview.result.lossQty, "g")} (${formatPercent(preview.result.lossRate)})` : "";
+            setDone({ kind: values.kind, summary: `Giá vốn ${formatVnd(preview.result.totalInputCost)}${loss}` });
+          }
         }}
       >
         <Card>
@@ -141,13 +179,33 @@ export default function ProductionPage() {
         )}
 
         <Card className="mt-4!">
-          <Form.Item name="note" label="Ghi chú">
+          <Form.Item name="note" label="Ghi chú" className="mb-0!">
             <Input.TextArea rows={2} maxLength={500} />
           </Form.Item>
-          <Button type="primary" htmlType="submit" size="large" block loading={saving} disabled={shortages.length > 0}>
-            Lưu phiếu chế biến
-          </Button>
         </Card>
+
+        <SubmitBar
+          summary={
+            preview ? (
+              <>
+                <div className="text-muted">{kind === "clean" ? "Hao hụt" : "Giá vốn đầu vào"}</div>
+                <div className={`text-base font-semibold whitespace-nowrap ${shortages.length > 0 ? "text-debt" : ""}`}>
+                  {shortages.length > 0
+                    ? "Thiếu hàng"
+                    : kind === "clean"
+                      ? `${formatQty(preview.result.lossQty, "g")} · ${formatPercent(preview.result.lossRate)}`
+                      : formatVnd(preview.result.totalInputCost)}
+                </div>
+              </>
+            ) : (
+              <div className="text-muted">Nhập đầu vào và đầu ra để xem trước</div>
+            )
+          }
+        >
+          <Button type="primary" htmlType="submit" size="large" loading={saving} disabled={shortages.length > 0}>
+            Lưu phiếu
+          </Button>
+        </SubmitBar>
       </Form>
     </div>
   );

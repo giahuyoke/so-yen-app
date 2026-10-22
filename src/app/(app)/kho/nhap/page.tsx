@@ -1,11 +1,12 @@
 "use client";
 
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Card, Form, Input, InputNumber, Segmented, Select } from "antd";
-import { useRouter } from "next/navigation";
+import { Button, Card, Form, Input, InputNumber, Result, Segmented, Select } from "antd";
+import Link from "next/link";
 import { useState } from "react";
 import { DateField } from "@/components/common/date-field";
 import { MoneyInput } from "@/components/common/money-input";
+import { blurActiveField, SubmitBar } from "@/components/common/submit-bar";
 import { useRunAction } from "@/components/common/use-run-action";
 import { ProductSelect } from "@/components/inventory/product-select";
 import { useShop } from "@/components/shop/shop-provider";
@@ -26,13 +27,13 @@ interface Values {
 
 export default function ReceiptPage() {
   const { shop } = useShop();
-  const router = useRouter();
   const run = useRunAction();
   const products = useProducts();
   const suppliers = useSuppliers();
   const [form] = Form.useForm<Values>();
-  const [id] = useState(newId);
+  const [id, setId] = useState(newId);
   const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState<string | null>(null);
   const kind = Form.useWatch("kind", form) ?? "harvest";
   const lines = Form.useWatch("lines", form) ?? [];
   const total = lines.reduce((sum, l) => sum + (l?.totalCost ?? 0), 0);
@@ -40,7 +41,31 @@ export default function ReceiptPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <h1 className="text-2xl font-semibold">Nhập kho</h1>
+      {done && (
+        <Card>
+          <Result
+            status="success"
+            title="Đã nhập kho"
+            subTitle={done}
+            extra={[
+              <Link key="process" href="/kho/che-bien"><Button type="primary">Chế biến ngay</Button></Link>,
+              <Button
+                key="again"
+                onClick={() => {
+                  form.resetFields();
+                  setId(newId());
+                  setDone(null);
+                }}
+              >
+                Nhập phiếu khác
+              </Button>,
+              <Link key="stock" href="/kho"><Button>Về kho</Button></Link>,
+            ]}
+          />
+        </Card>
+      )}
       <Form
+        className={done ? "hidden" : undefined}
         form={form}
         layout="vertical"
         initialValues={{ kind: "harvest", date: todayVN(), lines: [{}] }}
@@ -62,7 +87,11 @@ export default function ReceiptPage() {
             { success: "Đã nhập kho", form },
           );
           setSaving(false);
-          if (ok) router.push("/kho");
+          if (ok) {
+            blurActiveField();
+            const kindLabel = RECEIPT_KIND_LABEL[values.kind].toLowerCase();
+            setDone(`${values.lines.length} dòng · ${kindLabel}${values.kind === "purchase" ? ` · ${formatVnd(total)}` : ""}`);
+          }
         }}
       >
         <Card>
@@ -123,12 +152,25 @@ export default function ReceiptPage() {
         </Form.List>
 
         <Card className="mt-4!">
-          <Form.Item name="note" label="Ghi chú">
+          <Form.Item name="note" label="Ghi chú" className="mb-0!">
             <Input.TextArea rows={2} maxLength={500} />
           </Form.Item>
-          {kind === "purchase" && <div className="mb-3 text-lg font-semibold">Tổng: {formatVnd(total)}</div>}
-          <Button type="primary" htmlType="submit" size="large" block loading={saving}>Lưu phiếu nhập</Button>
         </Card>
+
+        <SubmitBar
+          summary={
+            kind === "purchase" ? (
+              <>
+                <div className="text-muted">Tổng tiền</div>
+                <div className="text-base font-semibold whitespace-nowrap">{formatVnd(total)}</div>
+              </>
+            ) : (
+              <div className="text-muted">{lines.filter((l) => l?.productId).length} sản phẩm</div>
+            )
+          }
+        >
+          <Button type="primary" htmlType="submit" size="large" loading={saving}>Lưu phiếu nhập</Button>
+        </SubmitBar>
       </Form>
     </div>
   );
