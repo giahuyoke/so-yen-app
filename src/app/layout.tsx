@@ -1,13 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro } from "next/font/google";
+import { Inter } from "next/font/google";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const font = Be_Vietnam_Pro({
+const font = Inter({
   subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-vietnam",
+  variable: "--font-app",
   display: "swap",
 });
 
@@ -15,7 +14,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#faf8f1",
+  themeColor: "#f4f7f5",
 };
 
 export const metadata: Metadata = {

@@ -1,10 +1,21 @@
 @import "tailwindcss";
 
-:root {
-  --app-bg: #faf8f1;
+/* Bảng màu "ngọc lục bảo": dùng được trong Tailwind dạng bg-brand, text-ink, border-line... */
+@theme {
+  --color-brand: #0f6e56;
+  --color-brand-dark: #085041;
+  --color-brand-soft: #e1f5ee;
+  --color-brand-tint: #9fe1cb;
+  --color-canvas: #f4f7f5;
+  --color-ink: #1f2a26;
+  --color-muted: #5f6b66;
+  --color-line: #e3eae6;
+  --color-debt: #b42318;
+  --color-debt-soft: #fdecea;
 }
 
 body {
-  background: var(--app-bg);
-  color: #302b20;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
 }

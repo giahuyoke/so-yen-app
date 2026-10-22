@@ -173,7 +173,7 @@ function LineList({
               const product = line?.productId ? products.byId.get(line.productId) : undefined;
               const unitLabel = product?.unit === "piece" ? "cái" : "g";
               return (
-                <div key={field.key} className="rounded-xl border border-[#e9e0ce] p-3">
+                <div key={field.key} className="rounded-xl border border-line p-3">
                   <div className="flex gap-2">
                     <Form.Item className="flex-1" name={[field.name, "productId"]} rules={[{ required: true, message: "Chọn sản phẩm" }]}>
                       <ProductSelect products={products.data} kinds={kinds} />

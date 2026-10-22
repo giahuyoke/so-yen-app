@@ -38,12 +38,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4">
-        <Card className="w-full max-w-sm">
-          <div className="space-y-6 text-center">
-            <div>
-              <Title level={2} className="mb-1!">Sổ Yến</Title>
-              <Paragraph type="secondary">Sổ sách kho, bán hàng và thuế cho hộ kinh doanh yến sào.</Paragraph>
-            </div>
+        <Card className="w-full max-w-sm overflow-hidden" styles={{ body: { padding: 0 } }}>
+          <div className="bg-brand px-6 pb-6 pt-8 text-white">
+            <div className="mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-brand-dark text-xl font-semibold">SY</div>
+            <Title level={2} className="mb-1! text-white!">Sổ Yến</Title>
+            <Paragraph className="mb-0! text-brand-tint!">Sổ sách kho, bán hàng và thuế cho hộ kinh doanh yến sào.</Paragraph>
+          </div>
+          <div className="space-y-4 p-6">
             {sessionError && (
               <Alert type="error" showIcon title="Không tạo được phiên đăng nhập. Vui lòng thử lại." />
             )}

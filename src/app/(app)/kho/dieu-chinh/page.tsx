@@ -53,7 +53,7 @@ export default function AdjustmentPage() {
         </Card>
         <Form.List name="lines">
           {(fields, { add, remove }) => (
-            <Card title="Sản phẩm" className="mt-4!" extra={<span className="text-xs text-stone-500">Số âm là giảm kho</span>}>
+            <Card title="Sản phẩm" className="mt-4!" extra={<span className="text-xs text-muted">Số âm là giảm kho</span>}>
               <div className="space-y-3">
                 {fields.map((field) => (
                   <div key={field.key} className="flex gap-2">
