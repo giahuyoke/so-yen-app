@@ -12,7 +12,7 @@ import { forecastYearRevenue } from "@/lib/domain/tax";
 
 function Tile({ label, value, hint, tone = "ink" }: { label: string; value: string; hint?: string; tone?: "ink" | "debt" }) {
   return (
-    <div className="rounded-2xl bg-white p-4">
+    <div className="rounded-2xl border border-line bg-white p-4">
       <div className="text-sm text-muted">{label}</div>
       <div className={`text-lg font-semibold ${tone === "debt" ? "text-debt" : "text-ink"}`}>{value}</div>
       {hint && <div className="text-xs text-muted">{hint}</div>}
@@ -23,8 +23,8 @@ function Tile({ label, value, hint, tone = "ink" }: { label: string; value: stri
 function Shortcut({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
   return (
     <Link href={href} className="text-ink">
-      <div className="flex items-center gap-3 rounded-2xl bg-white p-4">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-soft text-lg text-brand">{icon}</span>
+      <div className="flex items-center gap-3 rounded-2xl border border-line bg-white p-4 transition hover:border-brand-tint hover:shadow-[0_6px_16px_rgba(15,110,86,0.08)]">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-gradient-soft text-lg text-brand">{icon}</span>
         <span className="font-medium">{label}</span>
       </div>
     </Link>
@@ -60,7 +60,7 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       {/* Khối nổi bật kiểu ví điện tử: con số quan trọng nhất của tháng. */}
-      <section className="rounded-3xl bg-brand p-5 text-white">
+      <section className="hero-card">
         <div className="text-sm text-brand-tint">Doanh thu tháng {Number(month.slice(5))}</div>
         {stats.loading ? (
           <Skeleton.Input active className="mt-1" />
@@ -68,12 +68,12 @@ export default function DashboardPage() {
           <div className="text-3xl font-semibold">{formatVnd(monthRevenue)}</div>
         )}
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          <span className="rounded-full bg-brand-dark px-3 py-1">
+          <span className="hero-chip">
             Lãi gộp {formatVnd(monthProfit)}
             {monthRevenue > 0 && ` · ${formatPercent(monthProfit / monthRevenue)}`}
           </span>
-          <span className="rounded-full bg-brand-dark px-3 py-1">Lãi ròng {formatVnd(monthNet)}</span>
-          <span className="rounded-full bg-brand-dark px-3 py-1">{stats.data?.saleCount ?? 0} đơn</span>
+          <span className="hero-chip">Lãi ròng {formatVnd(monthNet)}</span>
+          <span className="hero-chip">{stats.data?.saleCount ?? 0} đơn</span>
         </div>
       </section>
 

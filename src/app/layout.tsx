@@ -25,9 +25,6 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="vi" className={`${font.variable} h-full antialiased`}>
-      <head>
-        <style>{"@layer theme, base, antd, components, utilities;"}</style>
-      </head>
       <body className="min-h-full font-sans">
         <AntdRegistry>
           <Providers>{children}</Providers>

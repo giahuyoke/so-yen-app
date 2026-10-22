@@ -62,7 +62,7 @@ export default function CustomerDetailPage() {
         <Button icon={<EditOutlined />} onClick={() => setEditOpen(true)}>Sửa</Button>
       </div>
 
-      <div className="rounded-3xl bg-brand p-5 text-white">
+      <div className="hero-card">
         <div className="text-sm text-brand-tint">Đang nợ</div>
         <div className="text-3xl font-semibold">{formatVnd(debt)}</div>
         <div className="mt-1 text-sm text-brand-tint">Đã mua {formatVnd(customer.totalSpent ?? 0)}</div>

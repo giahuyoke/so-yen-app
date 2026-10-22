@@ -30,7 +30,7 @@ export function TaxMeter({ actual, forecast, config }: { actual: number; forecas
       </div>
       <div className="relative mt-3 h-3 rounded-full bg-canvas">
         <div className="absolute inset-y-0 left-0 rounded-full bg-brand-tint" style={{ width: pct(forecast) }} />
-        <div className="absolute inset-y-0 left-0 rounded-full bg-brand" style={{ width: pct(actual) }} />
+        <div className="absolute inset-y-0 left-0 rounded-full bg-brand bg-brand-gradient" style={{ width: pct(actual) }} />
         {marks.map((m) => (
           <div key={m} className="absolute -inset-y-1 w-0.5 bg-ink" style={{ left: pct(m) }} />
         ))}

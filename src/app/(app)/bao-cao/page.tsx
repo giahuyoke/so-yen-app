@@ -210,13 +210,13 @@ export default function ReportsPage() {
       </div>
       <PeriodPicker value={period} onChange={setPeriod} today={today} />
 
-      <section className="rounded-3xl bg-brand p-5 text-white">
+      <section className="hero-card">
         <div className="text-sm text-brand-tint">Lãi ròng {range.label.toLowerCase()}</div>
         <div className="text-3xl font-semibold">{formatVnd(totals.netProfit)}</div>
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          <span className="rounded-full bg-brand-dark px-3 py-1">Doanh thu {formatVnd(totals.revenue)}</span>
-          <span className="rounded-full bg-brand-dark px-3 py-1">Lãi gộp {formatVnd(totals.grossProfit)}</span>
-          <span className="rounded-full bg-brand-dark px-3 py-1">Chi phí {formatVnd(totals.expenses)}</span>
+          <span className="hero-chip">Doanh thu {formatVnd(totals.revenue)}</span>
+          <span className="hero-chip">Lãi gộp {formatVnd(totals.grossProfit)}</span>
+          <span className="hero-chip">Chi phí {formatVnd(totals.expenses)}</span>
         </div>
       </section>
 

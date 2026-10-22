@@ -1,3 +1,13 @@
+/* Thứ tự layer phải khai báo trước mọi CSS khác: Next.js nạp file này trước <head>,
+   nên nếu để antd tự khai báo, layer antd sẽ đứng sau utilities và đè class Tailwind. */
+@layer theme, base, antd, components, utilities;
+/* Rule giữ chỗ: layer rỗng sẽ bị trình tối ưu CSS bỏ đi, kéo theo thứ tự ở trên. */
+@layer antd {
+  :root {
+    --antd-layer: 1;
+  }
+}
+
 @import "tailwindcss";
 
 /* Bảng màu "ngọc lục bảo": dùng được trong Tailwind dạng bg-brand, text-ink, border-line... */
@@ -14,8 +24,115 @@
   --color-debt-soft: #fdecea;
 }
 
+:root {
+  /* Gradient thương hiệu: sáng ở góc trên trái, đậm dần về góc dưới phải. */
+  --gradient-brand: linear-gradient(135deg, #1a9a76 0%, #0f6e56 48%, #06473a 100%);
+  --gradient-brand-soft: linear-gradient(135deg, #eefaf5 0%, #d9f2e8 100%);
+  /* Họa tiết sợi tổ yến (giống màn đăng nhập), dùng làm mask nên tô được màu bất kỳ. */
+  --nest-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400' fill='none' stroke='white' stroke-width='1.2'%3E%3Cellipse cx='200' cy='140' rx='60' ry='30' transform='rotate%28-16 200 140%29'/%3E%3Cellipse cx='200' cy='140' rx='82' ry='45' stroke-dasharray='2 6' transform='rotate%28-12 200 140%29'/%3E%3Cellipse cx='200' cy='140' rx='104' ry='60' transform='rotate%28-8 200 140%29'/%3E%3Cellipse cx='200' cy='140' rx='126' ry='75' stroke-dasharray='2 6' transform='rotate%28-4 200 140%29'/%3E%3Cellipse cx='200' cy='140' rx='148' ry='90' transform='rotate%280 200 140%29'/%3E%3Cellipse cx='200' cy='140' rx='170' ry='105' stroke-dasharray='2 6' transform='rotate%284 200 140%29'/%3E%3Cellipse cx='200' cy='140' rx='192' ry='120' transform='rotate%288 200 140%29'/%3E%3Cellipse cx='200' cy='140' rx='214' ry='135' stroke-dasharray='2 6' transform='rotate%2812 200 140%29'/%3E%3Cellipse cx='200' cy='140' rx='236' ry='150' transform='rotate%2816 200 140%29'/%3E%3C/svg%3E");
+}
+
 body {
-  background: var(--color-canvas);
+  /* Hai vệt sáng rất nhạt ở góc để nền không phẳng, cố định khi cuộn. */
+  background:
+    radial-gradient(60rem 28rem at 100% -8%, #dff3ea 0%, transparent 60%),
+    radial-gradient(40rem 24rem at -10% 105%, #e6f2ec 0%, transparent 60%),
+    var(--color-canvas);
+  background-attachment: fixed;
   color: var(--color-ink);
   font-variant-numeric: tabular-nums;
+}
+
+@utility bg-brand-gradient {
+  background-image: var(--gradient-brand);
+}
+
+@utility bg-brand-gradient-soft {
+  background-image: var(--gradient-brand-soft);
+}
+
+/* Khối số liệu nổi bật: nền gradient, họa tiết tổ yến mờ ở góc và một quầng sáng. */
+@utility hero-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+  color: white;
+  background-image: var(--gradient-brand);
+  box-shadow: 0 12px 28px -12px rgba(8, 80, 65, 0.55);
+
+  &::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: -5rem;
+    right: -7rem;
+    width: 24rem;
+    height: 24rem;
+    background: white;
+    opacity: 0.16;
+    mask: var(--nest-pattern) center / contain no-repeat;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    bottom: -6rem;
+    left: -4rem;
+    width: 14rem;
+    height: 14rem;
+    border-radius: 9999px;
+    background: #9fe1cb;
+    opacity: 0.22;
+    filter: blur(48px);
+    pointer-events: none;
+  }
+}
+
+/* Viên thông tin trên nền gradient. */
+@utility hero-chip {
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+}
+
+/* Họa tiết tổ yến rất mờ cho nền sáng (sidebar, thẻ). Phần tử cần position: relative. */
+@utility nest-watermark {
+  isolation: isolate;
+
+  &::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    right: -6rem;
+    bottom: -4rem;
+    width: 20rem;
+    height: 20rem;
+    background: var(--color-brand);
+    opacity: 0.06;
+    mask: var(--nest-pattern) center / contain no-repeat;
+    pointer-events: none;
+  }
+}
+
+@layer components {
+  /* Nút chính của antd dùng chung gradient thương hiệu. */
+  .ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled) {
+    background-image: var(--gradient-brand);
+    border-color: transparent;
+    box-shadow: 0 6px 16px -6px rgba(8, 80, 65, 0.55);
+  }
+  .ant-btn.ant-btn-color-primary.ant-btn-variant-solid:not(:disabled):hover {
+    filter: brightness(1.08);
+  }
+
+  /* Thẻ antd: viền mảnh và bóng rất nhẹ để tách khỏi nền. */
+  .ant-card {
+    box-shadow: 0 1px 2px rgba(31, 42, 38, 0.04), 0 8px 24px -16px rgba(15, 110, 86, 0.18);
+  }
 }

@@ -70,14 +70,14 @@ export default function ExpensesPage() {
         </div>
       </Card>
 
-      <section className="rounded-3xl bg-brand p-5 text-white">
+      <section className="hero-card">
         <div className="text-sm text-brand-tint">
           Chi phí từ {formatDate(range[0])} đến {formatDate(range[1])}
         </div>
         <div className="text-3xl font-semibold">{formatVnd(total)}</div>
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
           {EXPENSE_CATEGORIES.filter((c) => (byCategory[c] ?? 0) !== 0).map((c) => (
-            <span key={c} className="rounded-full bg-brand-dark px-3 py-1">
+            <span key={c} className="hero-chip">
               {EXPENSE_CATEGORY_LABEL[c]} {formatVnd(byCategory[c] ?? 0)}
             </span>
           ))}
