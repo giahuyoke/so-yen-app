@@ -3,8 +3,8 @@ import { formatNumber, formatQty, formatVnd, parseMoney } from "@/lib/domain/mon
 
 describe("formatVnd", () => {
   test("dùng dấu chấm phân cách hàng nghìn", () => {
-    expect(formatVnd(1250000)).toBe("1.250.000 ₫");
-    expect(formatVnd(0)).toBe("0 ₫");
+    expect(formatVnd(1250000)).toBe("1.250.000\u00a0₫");
+    expect(formatVnd(0)).toBe("0\u00a0₫");
     expect(formatNumber(-35000)).toBe("-35.000");
   });
 });

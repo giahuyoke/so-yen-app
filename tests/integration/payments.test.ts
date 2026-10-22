@@ -27,7 +27,7 @@ describe("payments", () => {
   test("không thu quá số nợ", async () => {
     await expect(createPayment(db(), SHOP_ID, owner, { ...pay, amount: 2_000_001 })).rejects.toMatchObject({
       code: "VALIDATION",
-      message: "Khách chỉ còn nợ 2.000.000 ₫.",
+      message: "Khách chỉ còn nợ 2.000.000\u00a0₫.",
     });
   });
 

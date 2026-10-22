@@ -6,8 +6,9 @@ export function formatNumber(value: number): string {
   return numberFormat.format(value);
 }
 
+/** Dấu cách không ngắt dòng để "₫" không rớt xuống dòng dưới con số. */
 export function formatVnd(value: number): string {
-  return `${formatNumber(value)} ₫`;
+  return `${formatNumber(value)}\u00a0₫`;
 }
 
 export function formatQty(qty: number, unit: Unit): string {

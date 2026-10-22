@@ -66,11 +66,11 @@ describe("saleSummaryText", () => {
     });
     expect(text).toContain("Yến sào Nhà Mình");
     expect(text).toContain("Đơn DH-2026-0001 · 22/10/2026");
-    expect(text).toContain("- Yến tinh tổ đẹp: 100g × 45.000 ₫ = 4.500.000 ₫");
-    expect(text).toContain("- Yến chưng 70ml: 2 cái × 300.000 ₫ = 600.000 ₫");
-    expect(text).toContain("Giảm giá: 100.000 ₫");
-    expect(text).toContain("Tổng cộng: 5.000.000 ₫");
-    expect(text).toContain("Còn nợ: 2.000.000 ₫");
+    expect(text).toContain("- Yến tinh tổ đẹp: 100g × 45.000\u00a0₫ = 4.500.000\u00a0₫");
+    expect(text).toContain("- Yến chưng 70ml: 2 cái × 300.000\u00a0₫ = 600.000\u00a0₫");
+    expect(text).toContain("Giảm giá: 100.000\u00a0₫");
+    expect(text).toContain("Tổng cộng: 5.000.000\u00a0₫");
+    expect(text).toContain("Còn nợ: 2.000.000\u00a0₫");
   });
 
   test("bỏ dòng giảm giá và còn nợ khi bằng 0", () => {
