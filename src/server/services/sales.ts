@@ -2,12 +2,21 @@ import { FieldValue, type Firestore } from "firebase-admin/firestore";
 import { unitCostOf } from "@/lib/domain/costing";
 import { monthKey } from "@/lib/domain/dates";
 import { AppError } from "@/lib/domain/errors";
-import { SELLABLE_KINDS, type SaleLine } from "@/lib/domain/models";
+import { SELLABLE_KINDS, type SaleDoc, type SaleLine } from "@/lib/domain/models";
+import { formatVnd } from "@/lib/domain/money";
 import { computeSale, nextSaleSeq, saleCode } from "@/lib/domain/sale";
-import { saleInput } from "@/lib/domain/schemas";
+import { saleInput, voidInput } from "@/lib/domain/schemas";
 import { saleStatsDelta } from "@/lib/domain/stats";
 import type { Actor } from "@/server/actor";
-import { loadProducts, requireActive, takeStock, writeMovements, writeProducts } from "@/server/services/inventory";
+import {
+  addStock,
+  loadProducts,
+  requireActive,
+  takeStock,
+  voidFields,
+  writeMovements,
+  writeProducts,
+} from "@/server/services/inventory";
 import { shopRef } from "@/server/services/membership";
 import { writeSaleStats } from "@/server/services/stats";
 
@@ -87,4 +96,50 @@ export async function createSale(db: Firestore, shopId: string, actor: Actor, in
     writeSaleStats(tx, shop, monthKey(s.date), saleStatsDelta({ channel: s.channel, lines }, 1));
     return { id: s.id, code };
   });
+}
+
+export async function voidSale(db: Firestore, shopId: string, actor: Actor, input: unknown) {
+  const v = voidInput.parse(input);
+  const shop = shopRef(db, shopId);
+  const ref = shop.collection("sales").doc(v.id);
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new AppError("NOT_FOUND", "Không tìm thấy đơn bán.");
+    const sale = snap.data() as Omit<SaleDoc, "id">;
+    if (sale.status === "voided") return;
+    const customerRef = sale.customerId ? shop.collection("customers").doc(sale.customerId) : null;
+    const customerSnap = customerRef ? await tx.get(customerRef) : null;
+    const products = await loadProducts(tx, shop, sale.lines.map((l) => l.productId));
+
+    if (customerSnap?.exists && sale.debt > 0) {
+      const balance = (customerSnap.get("debtBalance") as number | undefined) ?? 0;
+      if (balance < sale.debt) {
+        throw new AppError(
+          "VALIDATION",
+          `Không thể hủy: khách chỉ còn nợ ${formatVnd(balance)}, ít hơn số nợ ${formatVnd(sale.debt)} của đơn này. Hãy hủy các phiếu thu nợ liên quan trước.`,
+        );
+      }
+    }
+
+    for (const line of sale.lines) addStock(products.get(line.productId)!, line.qty, line.totalCost);
+
+    tx.update(ref, voidFields(actor, v.reason));
+    if (customerRef && customerSnap?.exists) {
+      tx.update(customerRef, {
+        debtBalance: FieldValue.increment(-sale.debt),
+        totalSpent: FieldValue.increment(-sale.total),
+      });
+    }
+    writeProducts(tx, shop, products);
+    writeMovements(
+      tx,
+      shop,
+      { type: "sale", id: v.id, date: sale.date },
+      sale.lines.map((l) => ({ productId: l.productId, qtyDelta: l.qty, costDelta: l.totalCost })),
+      "_void",
+    );
+    writeSaleStats(tx, shop, monthKey(sale.date), saleStatsDelta(sale, -1));
+  });
+  return { id: v.id };
 }
