@@ -6,6 +6,7 @@ import type { Actor } from "@/server/actor";
 export interface MyShop {
   id: string;
   name: string;
+  ownerUid: string;
 }
 
 export function shopRef(db: Firestore, shopId: string) {
@@ -36,7 +37,7 @@ export async function findMyShop(db: Firestore, actor: Actor): Promise<MyShop | 
   const owned = await db.collection("shops").where("memberUids", "array-contains", actor.uid).limit(1).get();
   if (!owned.empty) {
     const doc = owned.docs[0];
-    return { id: doc.id, name: doc.get("name") as string };
+    return { id: doc.id, name: doc.get("name") as string, ownerUid: doc.get("ownerUid") as string };
   }
 
   if (!actor.email || !actor.emailVerified) return null;
@@ -57,7 +58,7 @@ export async function findMyShop(db: Firestore, actor: Actor): Promise<MyShop | 
     tx.update(shop, { memberUids: FieldValue.arrayUnion(actor.uid) });
     tx.set(shop.collection("members").doc(actor.uid), memberData(actor));
     tx.delete(inviteRef);
-    return { id: shop.id, name: shopSnap.get("name") as string };
+    return { id: shop.id, name: shopSnap.get("name") as string, ownerUid: shopSnap.get("ownerUid") as string };
   });
   return joined;
 }
@@ -78,7 +79,7 @@ export async function createShop(db: Firestore, actor: Actor, input: unknown): P
   });
   batch.set(ref.collection("members").doc(actor.uid), memberData(actor));
   await batch.commit();
-  return { id: ref.id, name };
+  return { id: ref.id, name, ownerUid: actor.uid };
 }
 
 export async function inviteMember(db: Firestore, shopId: string, actor: Actor, input: unknown) {

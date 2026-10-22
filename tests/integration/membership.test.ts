@@ -15,6 +15,7 @@ describe("createShop", () => {
   test("tạo cửa hàng, người tạo là chủ và thành viên", async () => {
     const shop = await createShop(db(), owner, { name: "Yến Nhà Mình" });
     expect(shop.name).toBe("Yến Nhà Mình");
+    expect(shop.ownerUid).toBe(owner.uid);
     const snap = await db().collection("shops").doc(shop.id).get();
     expect(snap.data()).toMatchObject({ ownerUid: owner.uid, memberUids: [owner.uid], counters: { sale: 0 } });
     const member = await db().collection("shops").doc(shop.id).collection("members").doc(owner.uid).get();
@@ -34,13 +35,13 @@ describe("findMyShop", () => {
 
   test("tìm theo memberUids", async () => {
     await seedShop();
-    expect(await findMyShop(db(), owner)).toEqual({ id: SHOP_ID, name: "Yến Test" });
+    expect(await findMyShop(db(), owner)).toEqual({ id: SHOP_ID, name: "Yến Test", ownerUid: owner.uid });
   });
 
   test("tự vào cửa hàng khi có lời mời khớp email đã xác minh", async () => {
     await seedShop();
     await inviteMember(db(), SHOP_ID, owner, { email: "EM@example.com" });
-    expect(await findMyShop(db(), sister)).toEqual({ id: SHOP_ID, name: "Yến Test" });
+    expect(await findMyShop(db(), sister)).toEqual({ id: SHOP_ID, name: "Yến Test", ownerUid: owner.uid });
     const shop = await db().collection("shops").doc(SHOP_ID).get();
     expect(shop.get("memberUids")).toEqual([owner.uid, sister.uid]);
     const invite = await db().collection("shops").doc(SHOP_ID).collection("invites").doc("em@example.com").get();
