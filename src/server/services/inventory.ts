@@ -13,7 +13,7 @@ export interface MovementDraft {
   costDelta: number;
 }
 
-export type SourceType = "receipt" | "production" | "adjustment";
+export type SourceType = "receipt" | "production" | "adjustment" | "sale";
 
 /** Đọc các sản phẩm trong transaction. Phải gọi trước mọi lệnh ghi. */
 export async function loadProducts(tx: Transaction, shop: DocumentReference, ids: string[]): Promise<ProductMap> {

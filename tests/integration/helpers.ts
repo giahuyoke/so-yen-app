@@ -76,3 +76,18 @@ export async function listMovements(sourceId: string) {
     .get();
   return snap.docs.map((d) => d.data()).sort((a, b) => String(a.productId).localeCompare(String(b.productId)));
 }
+
+export const C = { lan: "cust_00000001", ba: "cust_00000002" } as const;
+
+export async function seedCustomer(id: string, overrides: Record<string, unknown> = {}) {
+  await db().collection("shops").doc(SHOP_ID).collection("customers").doc(id).set({
+    name: "Khách",
+    type: "retail",
+    ...overrides,
+  });
+}
+
+export async function getDoc(collection: string, id: string) {
+  const snap = await db().collection("shops").doc(SHOP_ID).collection(collection).doc(id).get();
+  return snap.data();
+}
