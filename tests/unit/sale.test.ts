@@ -52,6 +52,7 @@ describe("saleSummaryText", () => {
   test("có dòng hàng, giảm giá, đã trả và còn nợ", () => {
     const text = saleSummaryText({
       shopName: "Yến sào Nhà Mình",
+      customerName: "Shop Mẹ Bầu An An",
       code: "DH-2026-0001",
       date: "2026-10-22",
       lines: [
@@ -66,6 +67,7 @@ describe("saleSummaryText", () => {
     });
     expect(text).toContain("Yến sào Nhà Mình");
     expect(text).toContain("Đơn DH-2026-0001 · 22/10/2026");
+    expect(text).toContain("Khách hàng: Shop Mẹ Bầu An An");
     expect(text).toContain("- Yến tinh tổ đẹp: 100g × 4.500.000\u00a0₫/100g = 4.500.000\u00a0₫");
     expect(text).toContain("- Yến chưng 70ml: 2 cái × 300.000\u00a0₫/cái = 600.000\u00a0₫");
     expect(text).toContain("Giảm giá: 100.000\u00a0₫");
@@ -79,6 +81,7 @@ describe("saleSummaryText", () => {
       lines: [{ name: "X", unit: "piece", qty: 1, price: 10_000 }],
       subtotal: 10_000, discount: 0, total: 10_000, paid: 10_000, debt: 0,
     });
+    expect(text).not.toContain("Khách hàng");
     expect(text).not.toContain("Giảm giá");
     expect(text).not.toContain("Còn nợ");
   });

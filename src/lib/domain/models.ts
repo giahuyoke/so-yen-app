@@ -205,10 +205,14 @@ export interface SaleDoc extends DocBase {
   total: number;
   paid: number;
   debt: number;
+  /** Tổng các phiếu thu nợ gắn với đơn này (chưa hủy). Thiếu là 0. */
+  collected?: number;
 }
 
 export interface PaymentDoc extends DocBase {
   customerId: string;
+  /** Đơn được trả; null là thu chung, trừ vào đơn cũ nhất trước. Phiếu cũ không có trường này. */
+  saleId?: string | null;
   amount: number;
   method: PaymentMethod;
   note: string;

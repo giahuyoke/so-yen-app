@@ -123,6 +123,7 @@ const positiveMoney = z
 export const paymentInput = z.object({
   id,
   customerId: id,
+  saleId: id.nullable().default(null),
   date,
   amount: positiveMoney,
   method: z.enum(PAYMENT_METHODS),

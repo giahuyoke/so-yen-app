@@ -11,6 +11,7 @@ export async function createPayment(db: Firestore, shopId: string, actor: Actor,
   const shop = shopRef(db, shopId);
   const ref = shop.collection("payments").doc(p.id);
   const customerRef = shop.collection("customers").doc(p.customerId);
+  const saleRef = p.saleId ? shop.collection("sales").doc(p.saleId) : null;
 
   await db.runTransaction(async (tx) => {
     if ((await tx.get(ref)).exists) return;
@@ -19,8 +20,21 @@ export async function createPayment(db: Firestore, shopId: string, actor: Actor,
     const balance = (customer.get("debtBalance") as number | undefined) ?? 0;
     if (p.amount > balance) throw new AppError("VALIDATION", `Khách chỉ còn nợ ${formatVnd(balance)}.`);
 
+    if (saleRef) {
+      const sale = await tx.get(saleRef);
+      if (!sale.exists || sale.get("customerId") !== p.customerId || sale.get("status") !== "active") {
+        throw new AppError("NOT_FOUND", "Không tìm thấy đơn bán của khách này.");
+      }
+      const open = (sale.get("debt") as number) - ((sale.get("collected") as number | undefined) ?? 0);
+      if (p.amount > open) {
+        throw new AppError("VALIDATION", `Đơn ${sale.get("code") as string} chỉ còn nợ ${formatVnd(Math.max(0, open))}.`);
+      }
+      tx.update(saleRef, { collected: FieldValue.increment(p.amount) });
+    }
+
     tx.set(ref, {
       customerId: p.customerId,
+      saleId: p.saleId,
       date: p.date,
       amount: p.amount,
       method: p.method,
@@ -44,8 +58,10 @@ export async function voidPayment(db: Firestore, shopId: string, actor: Actor, i
     if (!snap.exists) throw new AppError("NOT_FOUND", "Không tìm thấy phiếu thu.");
     if (snap.get("status") === "voided") return;
     const customerRef = shop.collection("customers").doc(snap.get("customerId") as string);
+    const saleId = snap.get("saleId") as string | null | undefined;
     tx.update(ref, voidFields(actor, v.reason));
     tx.update(customerRef, { debtBalance: FieldValue.increment(snap.get("amount") as number) });
+    if (saleId) tx.update(shop.collection("sales").doc(saleId), { collected: FieldValue.increment(-(snap.get("amount") as number)) });
   });
   return { id: v.id };
 }

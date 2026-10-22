@@ -47,6 +47,8 @@ export function saleCode(year: number, seq: number): string {
 
 export interface SaleSummary {
   shopName: string;
+  /** Tên khách đã lưu; bỏ trống với khách lẻ. */
+  customerName?: string | null;
   code: string;
   date: string;
   lines: { name: string; unit: Unit; qty: number; price: number }[];
@@ -62,6 +64,7 @@ export function saleSummaryText(s: SaleSummary): string {
   const rows = [
     s.shopName,
     `Đơn ${s.code} · ${formatDate(s.date)}`,
+    ...(s.customerName ? [`Khách hàng: ${s.customerName}`] : []),
     ...s.lines.map(
       (l) => `- ${l.name}: ${formatQty(l.qty, l.unit)} × ${formatUnitPrice(l.price, l.unit)} = ${formatVnd(l.qty * l.price)}`,
     ),

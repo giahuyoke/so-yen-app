@@ -105,6 +105,7 @@ export function SaleForm({ onNew }: { onNew: () => void }) {
             code: result.code,
             summary: saleSummaryText({
               shopName: shop.name,
+              customerName: payload.customerId ? customers.byId.get(payload.customerId)?.name : null,
               code: result.code,
               date: payload.date,
               lines: payload.lines.map((l) => {

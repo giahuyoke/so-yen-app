@@ -2,15 +2,20 @@ import ExcelJS from "exceljs";
 import type { Firestore } from "firebase-admin/firestore";
 import { z } from "zod";
 import { formatDate } from "@/lib/domain/dates";
+import { formatPercent } from "@/lib/domain/money";
 import {
   EXPENSE_CATEGORY_LABEL,
+  PAYMENT_METHOD_LABEL,
+  PRODUCTION_KIND_LABEL,
   RECEIPT_KIND_LABEL,
   SALE_CHANNEL_LABEL,
   TAX_GROUP_LABEL,
   TAX_GROUPS,
   type Customer,
   type ExpenseDoc,
+  type PaymentDoc,
   type Product,
+  type ProductionDoc,
   type ReceiptDoc,
   type SaleDoc,
   type Supplier,
@@ -31,6 +36,10 @@ export interface ExportData {
   sales: SaleDoc[];
   expenses: ExpenseDoc[];
   receipts: ReceiptDoc[];
+  productions: ProductionDoc[];
+  payments: PaymentDoc[];
+  /** Mã đơn của mọi đơn được phiếu thu trong kỳ trỏ tới, kể cả đơn ngoài kỳ. */
+  saleCodes: Map<string, string>;
   products: Map<string, Product>;
   customers: Map<string, Customer>;
   suppliers: Map<string, Supplier>;
@@ -50,16 +59,39 @@ async function byId<T>(db: Firestore, shopId: string, name: string): Promise<Map
 
 export async function loadExportData(db: Firestore, shopId: string, input: unknown): Promise<ExportData> {
   const { from, to } = exportInput.parse(input);
-  const [shop, sales, expenses, receipts, products, customers, suppliers] = await Promise.all([
+  const [shop, sales, expenses, receipts, productions, payments, products, customers, suppliers] = await Promise.all([
     shopRef(db, shopId).get(),
     inRange<SaleDoc>(db, shopId, "sales", from, to),
     inRange<ExpenseDoc>(db, shopId, "expenses", from, to),
     inRange<ReceiptDoc>(db, shopId, "receipts", from, to),
+    inRange<ProductionDoc>(db, shopId, "productions", from, to),
+    inRange<PaymentDoc>(db, shopId, "payments", from, to),
     byId<Product>(db, shopId, "products"),
     byId<Customer>(db, shopId, "customers"),
     byId<Supplier>(db, shopId, "suppliers"),
   ]);
-  return { shopName: shop.get("name") as string, from, to, sales, expenses, receipts, products, customers, suppliers };
+  const saleCodes = new Map(sales.map((s) => [s.id, s.code]));
+  const missing = [...new Set(payments.flatMap((p) => (p.saleId && !saleCodes.has(p.saleId) ? [p.saleId] : [])))];
+  if (missing.length > 0) {
+    const salesCol = shopRef(db, shopId).collection("sales");
+    for (const snap of await db.getAll(...missing.map((id) => salesCol.doc(id)))) {
+      if (snap.exists) saleCodes.set(snap.id, snap.get("code") as string);
+    }
+  }
+  return {
+    shopName: shop.get("name") as string,
+    from,
+    to,
+    sales,
+    expenses,
+    receipts,
+    productions,
+    payments,
+    saleCodes,
+    products,
+    customers,
+    suppliers,
+  };
 }
 
 const MONEY = "#,##0";
@@ -73,7 +105,7 @@ function header(sheet: ExcelJS.Worksheet, columns: { header: string; width: numb
 
 const statusLabel = (status: string) => (status === "voided" ? "Đã hủy" : "");
 
-/** Sổ chi tiết doanh thu theo mẫu S1-HKD, cùng danh sách đơn bán, chi phí, nhập kho trong kỳ. */
+/** Sổ chi tiết doanh thu theo mẫu S1-HKD, cùng danh sách đơn bán, thu nợ, chi phí, nhập kho, chế biến trong kỳ. */
 export async function buildWorkbook(data: ExportData): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "Sổ Yến";
@@ -180,6 +212,28 @@ export async function buildWorkbook(data: ExportData): Promise<Buffer> {
     ]);
   }
 
+  const paymentSheet = wb.addWorksheet("Thu nợ");
+  header(paymentSheet, [
+    { header: "Ngày", width: 12 },
+    { header: "Khách hàng", width: 22 },
+    { header: "Số tiền", width: 14, money: true },
+    { header: "Hình thức", width: 14 },
+    { header: "Cho đơn", width: 16 },
+    { header: "Ghi chú", width: 32 },
+    { header: "Trạng thái", width: 10 },
+  ]);
+  for (const p of data.payments) {
+    paymentSheet.addRow([
+      formatDate(p.date),
+      data.customers.get(p.customerId)?.name ?? "",
+      p.amount,
+      PAYMENT_METHOD_LABEL[p.method],
+      p.saleId ? (data.saleCodes.get(p.saleId) ?? "") : "Thu chung",
+      p.note,
+      statusLabel(p.status),
+    ]);
+  }
+
   const expenseSheet = wb.addWorksheet("Chi phí");
   header(expenseSheet, [
     { header: "Ngày", width: 12 },
@@ -216,6 +270,40 @@ export async function buildWorkbook(data: ExportData): Promise<Buffer> {
         statusLabel(r.status),
       ]);
     }
+  }
+
+  // Chế biến: mỗi nguyên liệu và thành phẩm một dòng; hao hụt ghi ở dòng đầu của phiếu.
+  const productionSheet = wb.addWorksheet("Chế biến");
+  header(productionSheet, [
+    { header: "Ngày", width: 12 },
+    { header: "Loại", width: 18 },
+    { header: "Vào / Ra", width: 10 },
+    { header: "Sản phẩm", width: 28 },
+    { header: "Số lượng", width: 12 },
+    { header: "Giá vốn", width: 14, money: true },
+    { header: "Hao hụt", width: 16 },
+    { header: "Ghi chú", width: 28 },
+    { header: "Trạng thái", width: 10 },
+  ]);
+  for (const pr of data.productions) {
+    const lines = [
+      ...pr.inputs.map((l) => ({ side: "Vào", ...l })),
+      ...pr.outputs.map((l) => ({ side: "Ra", ...l })),
+    ];
+    lines.forEach((line, i) => {
+      const p = data.products.get(line.productId);
+      productionSheet.addRow([
+        formatDate(pr.date),
+        PRODUCTION_KIND_LABEL[pr.kind],
+        line.side,
+        p?.name ?? line.productId,
+        `${line.qty} ${p?.unit === "g" ? "g" : "cái"}`,
+        line.totalCost,
+        i === 0 && pr.lossQty > 0 ? `${pr.lossQty} g (${formatPercent(pr.lossRate)})` : "",
+        i === 0 ? pr.note : "",
+        statusLabel(pr.status),
+      ]);
+    });
   }
 
   return Buffer.from(await wb.xlsx.writeBuffer());

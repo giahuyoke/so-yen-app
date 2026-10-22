@@ -24,4 +24,15 @@ describe("remainingDebtBySale", () => {
     ];
     expect(remainingDebtBySale(sales, 1_000)).toEqual(new Map([["b", 1_000]]));
   });
+
+  test("tiền thu gắn đơn trừ thẳng vào đơn đó, tiền không gắn đơn vẫn trả đơn cũ trước", () => {
+    // Tổng nợ 6tr. Thu 1tr gắn đơn c (mới nhất) và 2tr không gắn đơn: còn 3tr.
+    const sales = [sale("a", "2026-08-01", 3_000_000), sale("b", "2026-09-01", 2_000_000), { ...sale("c", "2026-10-01", 1_000_000), collected: 1_000_000 }];
+    expect(remainingDebtBySale(sales, 3_000_000)).toEqual(new Map([["b", 2_000_000], ["a", 1_000_000]]));
+  });
+
+  test("đơn thu một phần bằng tiền gắn đơn chỉ còn phần chưa thu", () => {
+    const sales = [sale("a", "2026-08-01", 1_000_000), { ...sale("b", "2026-09-01", 2_400_000), collected: 1_400_000 }];
+    expect(remainingDebtBySale(sales, 2_000_000)).toEqual(new Map([["b", 1_000_000], ["a", 1_000_000]]));
+  });
 });

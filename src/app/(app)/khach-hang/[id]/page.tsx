@@ -1,7 +1,7 @@
 "use client";
 
 import { EditOutlined } from "@ant-design/icons";
-import { Button, Card, Empty, Form, Input, Modal, Result, Segmented, Tabs, Tag } from "antd";
+import { Button, Card, Empty, Form, Input, Modal, Result, Segmented, Select, Tabs, Tag } from "antd";
 import { ItemList, ListItem, ListItemMeta } from "@/components/common/item-list";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -21,7 +21,11 @@ import { remainingDebtBySale } from "@/lib/domain/debt";
 import { formatVnd } from "@/lib/domain/money";
 import { createPaymentAction, voidPaymentAction } from "@/server/actions/sales";
 
+/** Giá trị "Thu chung" của ô chọn đơn (Select của antd không nhận null). */
+const GENERAL = "";
+
 interface PaymentValues {
+  saleId: string;
   amount: number | null;
   method: PaymentMethod;
   date: string;
@@ -40,6 +44,7 @@ export default function CustomerDetailPage() {
   const [voiding, setVoiding] = useState<PaymentDoc | null>(null);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm<PaymentValues>();
+  const paySaleId = Form.useWatch("saleId", form) || null;
 
   const customer = customers.byId.get(id);
   if (customers.loading) return <Card loading />;
@@ -48,6 +53,21 @@ export default function CustomerDetailPage() {
   }
   const debt = customer.debtBalance ?? 0;
   const remaining = remainingDebtBySale(sales.data, debt);
+  const payMax = paySaleId ? (remaining.get(paySaleId) ?? 0) : debt;
+  const saleCode = new Map(sales.data.map((s) => [s.id, s.code]));
+  // Đơn còn nợ, cũ nhất trước: thứ tự mà phiếu thu chung sẽ trừ vào.
+  const owing = sales.data.filter((s) => remaining.has(s.id)).reverse();
+
+  const openPayment = (saleId: string | null) => {
+    form.setFieldsValue({
+      saleId: saleId ?? GENERAL,
+      amount: saleId ? (remaining.get(saleId) ?? 0) : debt,
+      method: "transfer",
+      date: todayVN(),
+      note: "",
+    });
+    setPaying(newId());
+  };
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -71,10 +91,7 @@ export default function CustomerDetailPage() {
             className="mt-4 border-none! bg-white! text-brand!"
             size="large"
             block
-            onClick={() => {
-              form.setFieldsValue({ amount: debt, method: "transfer", date: todayVN(), note: "" });
-              setPaying(newId());
-            }}
+            onClick={() => openPayment(null)}
           >
             Thu nợ
           </Button>
@@ -94,10 +111,18 @@ export default function CustomerDetailPage() {
                   <ItemList
                     dataSource={sales.data}
                     renderItem={(s) => (
-                      <ListItem extra={s.status === "voided" ? <Tag>Đã hủy</Tag> : <DebtTag sale={s} remaining={remaining.get(s.id) ?? 0} loading={sales.loading} />}>
+                      <ListItem
+                        extra={s.status === "voided" ? <Tag>Đã hủy</Tag> : undefined}
+                        actions={remaining.has(s.id) ? [<Button key="pay" size="small" onClick={() => openPayment(s.id)}>Thu</Button>] : undefined}
+                      >
                         <ListItemMeta
                           title={<span className={s.status === "voided" ? "line-through opacity-60" : ""}>{s.code}</span>}
-                          description={`${formatDate(s.date)} · ${formatVnd(s.total)}`}
+                          description={
+                            <>
+                              {formatDate(s.date)} · {formatVnd(s.total)}
+                              <DebtTag sale={s} remaining={remaining.get(s.id) ?? 0} loading={sales.loading} />
+                            </>
+                          }
                         />
                       </ListItem>
                     )}
@@ -126,7 +151,11 @@ export default function CustomerDetailPage() {
                       >
                         <ListItemMeta
                           title={<span className={p.status === "voided" ? "line-through opacity-60" : ""}>{formatVnd(p.amount)}</span>}
-                          description={[formatDate(p.date), PAYMENT_METHOD_LABEL[p.method], p.note, p.voidReason && `Lý do hủy: ${p.voidReason}`]
+                          description={[
+                            formatDate(p.date),
+                            PAYMENT_METHOD_LABEL[p.method],
+                            p.saleId ? `cho đơn ${saleCode.get(p.saleId) ?? p.saleId}` : "thu chung",
+                            p.note, p.voidReason && `Lý do hủy: ${p.voidReason}`]
                             .filter(Boolean)
                             .join(" · ")}
                         />
@@ -157,14 +186,38 @@ export default function CustomerDetailPage() {
             if (!paying) return;
             setSaving(true);
             const ok = await run(
-              createPaymentAction(shop.id, { id: paying, customerId: customer.id, ...values, note: values.note ?? "" }),
+              createPaymentAction(shop.id, { id: paying, customerId: customer.id, ...values, saleId: values.saleId || null, note: values.note ?? "" }),
               { success: "Đã ghi phiếu thu", form },
             );
             setSaving(false);
             if (ok) setPaying(null);
           }}
         >
-          <Form.Item name="amount" label="Số tiền" rules={[{ required: true, type: "number", min: 1, message: "Nhập số tiền" }]}>
+          <Form.Item
+            name="saleId"
+            label="Trả cho đơn"
+            extra={paySaleId ? undefined : "Thu chung được trừ vào đơn nợ cũ nhất trước."}
+          >
+            <Select<string>
+              options={[
+                { value: GENERAL, label: "Thu chung" },
+                ...owing.map((s) => ({ value: s.id, label: `${s.code} · ${formatDate(s.date)} · còn nợ ${formatVnd(remaining.get(s.id) ?? 0)}` })),
+              ]}
+              onChange={(saleId) => form.setFieldValue("amount", saleId ? (remaining.get(saleId) ?? 0) : debt)}
+            />
+          </Form.Item>
+          <Form.Item
+            name="amount"
+            label="Số tiền"
+            rules={[
+              { required: true, type: "number", min: 1, message: "Nhập số tiền" },
+              {
+                type: "number",
+                max: payMax,
+                message: paySaleId ? `Đơn này chỉ còn nợ ${formatVnd(payMax)}` : `Khách chỉ còn nợ ${formatVnd(payMax)}`,
+              },
+            ]}
+          >
             <MoneyInput />
           </Form.Item>
           <Form.Item name="method" label="Hình thức">

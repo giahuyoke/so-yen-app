@@ -112,6 +112,9 @@ export async function voidSale(db: Firestore, shopId: string, actor: Actor, inpu
     const customerSnap = customerRef ? await tx.get(customerRef) : null;
     const products = await loadProducts(tx, shop, sale.lines.map((l) => l.productId));
 
+    if ((sale.collected ?? 0) > 0) {
+      throw new AppError("VALIDATION", "Không thể hủy: đơn này đã có phiếu thu nợ. Hãy hủy các phiếu thu của đơn trước.");
+    }
     if (customerSnap?.exists && sale.debt > 0) {
       const balance = (customerSnap.get("debtBalance") as number | undefined) ?? 0;
       if (balance < sale.debt) {
